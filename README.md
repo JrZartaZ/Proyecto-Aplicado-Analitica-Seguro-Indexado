@@ -1,225 +1,164 @@
 # Proyecto: Modelo Analítico Climático para Riesgo de Café en Colombia
 
-**README metodológico actualizado**  
-**Periodo del cubo:** 2021-2024  
-**Unidad de análisis:** semana ISO  
-**Nivel analítico:** proxy nacional y panel departamental construido desde cinco municipios cafeteros representativos  
+## 1. Enfoque general del proyecto
+
+Este repositorio documenta el desarrollo de un artefacto analítico para apoyar el diseño, monitoreo y simulación de un seguro agrícola indexado para café en Colombia.
+
+El proyecto integra información productiva, climática y económica con el fin de construir una base analítica trazable que permita:
+
+- analizar el comportamiento climático en zonas cafeteras representativas;
+- aproximar una variable productiva semanal útil para monitoreo operativo;
+- construir variables explicativas climáticas, económicas y estructurales;
+- comparar modelos en diferentes frecuencias de análisis;
+- apoyar decisiones relacionadas con riesgo, primas, exposición, sensibilidad y posibles triggers de un seguro indexado.
+
+El punto de partida metodológico es que, en contextos agroclimáticos con información productiva observada a baja frecuencia, la solución no debe depender de un único modelo perfecto. En su lugar, se propone una arquitectura analítica por capas que combine consistencia estadística, utilidad operativa, trazabilidad metodológica y lectura de negocio.
 
 ---
 
-## 1. Contexto del proyecto
+## 2. Objetivo del repositorio
 
-El cultivo de café en Colombia es altamente vulnerable al riesgo climático. La variabilidad en precipitaciones, los excesos de lluvia, los periodos secos, la temperatura, la humedad del suelo y la radiación pueden afectar la floración, el desarrollo del fruto, la calidad del grano y el volumen producido.
+Construir y documentar un cubo de datos climático-productivo-económico para café, con foco en el periodo 2021-2024, que permita desarrollar modelos exploratorios y operativos para un seguro agrícola indexado.
 
-El objetivo del proyecto es construir un cubo de datos semanal que permita estudiar la relación entre condiciones climáticas, producción cafetera y señales económicas, como insumo para un futuro modelo de **seguro agrícola indexado**.
+El repositorio busca responder preguntas como:
 
-La principal limitación metodológica es que la producción agrícola observada está disponible en frecuencia anual para los municipios seleccionados, mientras que las variables climáticas y económicas se encuentran en frecuencia semanal, mensual o diaria. Por esta razón, se construye una **Y semanal proxy**, documentando explícitamente sus supuestos, limitaciones y usos.
-
----
-
-## 2. Objetivo del cubo de datos
-
-Construir una base semanal 2021-2024 que permita:
-
-- Integrar producción, clima y variables económicas en una frecuencia común.
-- Construir una variable objetivo semanal proxy sin usar clima en su construcción.
-- Reservar las variables climáticas como **X explicativas** para modelación.
-- Evitar leakage o correlación artificial entre la Y semanal y las X climáticas.
-- Preparar dos estructuras de modelamiento:
-  - una **base proxy nacional semanal**;
-  - una **base panel departamental semanal**.
-- Documentar los supuestos de desagregación temporal para que el modelo sea defendible.
+- ¿Cómo se puede armonizar producción anual con variables climáticas semanales?
+- ¿Qué variables climáticas explican mejor el riesgo productivo del café?
+- ¿Qué papel tienen variables económicas como precio interno, precio externo, exportaciones y TRM?
+- ¿Qué frecuencia de modelamiento es más útil: semanal, mensual o anual?
+- ¿Cómo evitar leakage al construir una variable objetivo semanal no observada directamente?
+- ¿Cómo convertir el modelo en un artefacto útil para monitoreo, simulación y apoyo a decisiones de aseguramiento?
 
 ---
 
-## 3. Estructuras de datos generadas
+## 3. Diseño territorial del proyecto
 
-### 3.1 Base proxy nacional semanal
+El proyecto utiliza cinco municipios cafeteros representativos ubicados en cinco departamentos relevantes para la producción de café en Colombia.
 
-La primera base tiene una fila por semana. Su lógica es construir una aproximación nacional a partir de los cinco municipios seleccionados.
+| Departamento | Municipio representativo | Rol dentro del proyecto |
+|-------------|--------------------------|--------------------------|
+| Antioquia   | Fredonia                 | Zona cafetera representativa |
+| Huila       | San Agustín              | Zona cafetera representativa |
+| Tolima      | Ibagué                   | Zona cafetera representativa |
+| Caldas      | Chinchiná                | Zona cafetera representativa |
+| Cauca       | Suárez                   | Zona cafetera representativa |
 
-En esta base:
+La lógica no es afirmar que estos cinco municipios representan perfectamente toda la producción nacional, sino construir una proxy nacional operativa a partir de zonas cafeteras estratégicas, con condiciones climáticas heterogéneas y relevancia productiva.
 
-- la producción anual corresponde a la suma de los cinco municipios;
-- las variables climáticas corresponden al promedio nacional proxy previamente consolidado desde los cinco departamentos;
-- las variables económicas como precio interno, precio externo, exportaciones, valor de cosecha y TRM se integran como señales de contexto nacional.
-
-Esta base se entrega como:
-
-```text
-base_proxy_nacional_semanal_cafe_2021_2024.csv
-```
-
-Y también dentro del Excel consolidado:
-
-```text
-cubo_cafe_semanal_proxy_y_panel_2021_2024.xlsx
-```
+En futuras versiones, el artefacto puede escalar hacia modelos específicos por municipio, finca, zona agroclimática o región cafetera. Para esta versión, la prioridad es construir una base consistente, explicable y defendible para modelamiento inicial.
 
 ---
 
-### 3.2 Base panel departamental semanal
+## 4. Arquitectura general de datos
 
-La segunda base se construye en modo panel, con una fila por departamento y semana.
+El proyecto organiza la información en dos estructuras principales y tres frecuencias de trabajo.
 
-El nivel territorial queda como:
+### 4.1 Cubos principales
 
-```text
-departamento - semana
-```
+1. **Base proxy nacional semanal**
 
-Se decidió dejar únicamente el nombre del departamento porque cada departamento representa el municipio seleccionado en el proyecto. Esto evita agregar columnas redundantes, dado que el municipio está determinado por la selección metodológica inicial.
+   Una fila por semana. Se construye agregando la producción de los cinco municipios/departamentos seleccionados y usando el consolidado climático proxy nacional.
 
-| Departamento | Municipio representativo usado en producción |
-|---|---|
-| Antioquia | Fredonia |
-| Caldas | Chinchiná |
-| Cauca | Suárez |
-| Huila | San Agustín |
-| Tolima | Ibagué |
+2. **Base panel departamental semanal**
 
-En esta base:
+   Una fila por departamento-semana. Se conserva el departamento como identificador territorial, dado que cada departamento está asociado al municipio representativo definido en el diseño del proyecto.
 
-- la Y semanal se calcula para cada municipio/departamento;
-- las variables climáticas se toman a nivel departamental;
-- las variables económicas nacionales se replican para cada departamento-semana;
-- se conserva una estructura adecuada para modelos panel, modelos con efectos por departamento o validaciones por corte temporal.
+### 4.2 Frecuencias de análisis
 
-Esta base se entrega como:
+Para la fase de experimentación se trabaja con tres frecuencias:
 
-```text
-base_panel_departamental_semanal_cafe_2021_2024.csv
-```
+- **Semanal:** capa operativa para monitoreo, sensibilidad y simulación.
+- **Mensual:** capa intermedia para balancear consistencia productiva y utilidad operativa.
+- **Anual:** capa de contraste metodológico y validación más agregada.
+
+La frecuencia semanal permite mayor detalle operativo, pero la Y no es observada directamente. La frecuencia mensual ofrece un equilibrio entre detalle temporal y estabilidad. La frecuencia anual permite contrastar resultados con el nivel de observación productiva original, aunque con menos registros.
 
 ---
 
-## 4. Selección territorial y construcción de la proxy nacional
+## 5. Fuentes y tipos de variables
 
-El proyecto no usa directamente la producción nacional oficial como target principal. En su lugar, se construye una **proxy nacional** a partir de cinco municipios cafeteros representativos.
+### 5.1 Variables productivas
 
-La lógica es:
-
-> Seleccionar municipios ubicados en departamentos cafeteros relevantes, sumar o promediar sus variables según corresponda y construir una aproximación operacional del comportamiento cafetero nacional.
-
-Esta decisión permite mantener coherencia entre producción agrícola y variables climáticas, ya que el clima proviene de las zonas seleccionadas y no de un agregado nacional genérico.
-
-Para futuras mejoras, una extensión natural del proyecto será pasar de una proxy nacional a modelos específicos por municipio o departamento.
-
----
-
-## 5. Fuentes de datos utilizadas
-
-### 5.1 Producción municipal anual
-
-Contiene producción, área sembrada, área cosechada y rendimiento por municipio. Es la fuente base para construir la producción anual observada de los municipios seleccionados.
+Provienen de fuentes de producción agrícola disponibles a nivel anual para los municipios seleccionados. Se utilizan para construir la variable objetivo proxy.
 
 Variables principales:
 
-- `produccion_anual_t`
-- `area_sembrada_ha`
-- `area_cosechada_ha`
-- `rendimiento_t_ha`
+- `produccion_anual_departamental_t`
+- `produccion_anual_proxy_5mun_t`
+- `produccion_mensual_proxy_t`
+- `produccion_semanal_proxy_t`
+- `area_cosechada_departamental_ha`
+- `rendimiento_departamental_t_ha`
+- `valor_cosecha_anual_millones`
+
+### 5.2 Variables climáticas NASA
+
+Variables climáticas semanales extraídas y consolidadas desde NASA POWER.
+
+| Variable | Descripción general | Tipo de agregación sugerida |
+|----------|---------------------|-----------------------------|
+| `PRECTOTCORR` | Precipitación corregida | Flujo / acumulación |
+| `IMERG_PRECTOT` | Precipitación IMERG | Flujo / acumulación |
+| `T2M` | Temperatura media a 2 metros | Estado / promedio |
+| `T2M_MAX` | Temperatura máxima | Estado / promedio o máximo |
+| `T2M_MIN` | Temperatura mínima | Estado / promedio o mínimo |
+| `RH2M` | Humedad relativa | Estado / promedio |
+| `QV2M` | Humedad específica | Estado / promedio |
+| `GWETTOP` | Humedad superficial del suelo | Estado / promedio |
+| `GWETROOT` | Humedad en zona radicular | Estado / promedio |
+| `ALLSKY_SFC_SW_DWN` | Radiación solar de onda corta | Estado / promedio |
+| `WS2M` | Velocidad del viento | Estado / promedio |
+
+### 5.3 Variables económicas y de mercado
+
+Estas variables se incorporan como contexto económico y financiero. No son el núcleo climático del seguro, pero pueden ayudar a explicar exposición, condiciones de mercado y sensibilidad económica.
+
+Variables principales:
+
+- `precio_interno_cop_carga`
+- `precio_externo_exdock_cent_usd_lb`
+- `exportaciones_mensual_miles_sacos`
+- `trm_viernes_cop_usd`
+- `trm_ultimo_dia_semana_cop_usd`
+
+La TRM se incorpora como variable económica de contexto. En la base se conserva el nombre `trm_viernes_cop_usd` por compatibilidad con versiones previas, pero metodológicamente representa la TRM vigente al cierre de la semana o último día disponible de la semana.
 
 ---
 
-### 5.2 Producción nacional mensual oficial
+## 6. Construcción de la variable objetivo semanal
 
-Se usa como **patrón temporal de estacionalidad mensual**.
+### 6.1 Target principal
 
-No se usa como target final, ni reemplaza la proxy de los cinco municipios. Su función es distribuir la producción anual municipal entre meses de forma más realista.
-
-Variable principal:
-
-```text
-produccion_nacional_mensual_oficial_miles_sacos
-```
-
----
-
-### 5.3 Variables climáticas NASA
-
-Variables semanales disponibles:
-
-| Variable | Descripción | Uso |
-|---|---|---|
-| `PRECTOTCORR` | Precipitación corregida | X climática central |
-| `IMERG_PRECTOT` | Precipitación IMERG | X climática complementaria |
-| `T2M` | Temperatura media a 2 metros | X climática central |
-| `T2M_MAX` | Temperatura máxima | X de estrés térmico |
-| `T2M_MIN` | Temperatura mínima | X climática |
-| `RH2M` | Humedad relativa | X asociada a hongos/estrés |
-| `QV2M` | Humedad específica | X climática |
-| `GWETTOP` | Humedad superficial del suelo | X central |
-| `GWETROOT` | Humedad en zona radicular | X central |
-| `ALLSKY_SFC_SW_DWN` | Radiación solar | X asociada a fotosíntesis |
-| `WS2M` | Velocidad del viento | X complementaria |
-
----
-
-### 5.4 Variables económicas y de mercado
-
-| Variable | Uso recomendado |
-|---|---|
-| Precio interno del café | Señal económica local; preferir rezagos y medias móviles |
-| Precio externo Ex-Dock | Señal externa/internacional; preferir rezagos |
-| Exportaciones | Contexto comercial; preferir rezagos |
-| Valor cosecha | Exposición financiera y severidad económica |
-| TRM / dólar | Contexto cambiario y costos de insumos importados |
-
----
-
-## 6. Construcción de la variable objetivo semanal `Y`
-
-### 6.1 Nombre de la Y semanal
-
-La variable objetivo semanal principal es:
+La variable objetivo principal de la base semanal es:
 
 ```text
 produccion_semanal_proxy_t
 ```
 
-Esta variable representa producción semanal proxy en toneladas.
+Esta variable **no representa producción semanal observada**. Es una proxy operativa construida a partir de:
+
+1. producción anual observada de los municipios seleccionados;
+2. estacionalidad mensual nacional observada;
+3. una regla de asignación semanal por calendario.
+
+Su uso principal es operativo: monitoreo, simulación, sensibilidad y modelamiento exploratorio del artefacto de seguro indexado.
 
 ---
 
-### 6.2 Interpretación correcta
+### 6.2 Mensualización de la producción anual
 
-La Y semanal **no es producción semanal observada**.
-
-Debe interpretarse como:
-
-> Producción semanal proxy asociada a la producción anual de los cinco municipios seleccionados, distribuida temporalmente con una regla trazable de desagregación temporal.
-
-No debe interpretarse como:
-
-> Producción semanal real observada de Colombia.
-
----
-
-### 6.3 Paso 1: producción anual proxy
-
-Para la base proxy nacional, primero se suma la producción anual de los cinco municipios:
+Para cada año `a`, la producción anual observada de los cinco municipios se agrega como:
 
 \[
-P^{proxy}_{a} = \sum_{j=1}^{5} P_{j,a}
+P^{proxy}_{a} = \sum_{d=1}^{5} P_{d,a}
 \]
 
 Donde:
 
-- \(P^{proxy}_{a}\) es la producción anual proxy del año \(a\);
-- \(P_{j,a}\) es la producción anual observada del municipio \(j\) en el año \(a\).
+- `P^{proxy}_{a}` es la producción anual de la proxy nacional.
+- `P_{d,a}` es la producción anual del departamento o municipio representativo `d` en el año `a`.
 
-Para la base panel, se conserva la producción anual de cada municipio/departamento:
-
-\[
-P_{d,a}
-\]
-
----
-
-### 6.4 Paso 2: mensualización usando estacionalidad mensual nacional
-
-La producción anual se distribuye entre meses usando la participación mensual de la producción nacional oficial.
+Luego se calcula el peso mensual nacional observado:
 
 \[
 w_{a,m} = \frac{PN_{a,m}}{\sum_{m=1}^{12} PN_{a,m}}
@@ -227,344 +166,261 @@ w_{a,m} = \frac{PN_{a,m}}{\sum_{m=1}^{12} PN_{a,m}}
 
 Donde:
 
-- \(w_{a,m}\) es el peso del mes \(m\) en el año \(a\);
-- \(PN_{a,m}\) es la producción nacional mensual oficial.
+- `PN_{a,m}` es la producción nacional mensual oficial en el año `a` y mes `m`.
+- `w_{a,m}` representa la participación del mes dentro de la producción anual nacional.
 
-Luego, para la base proxy nacional:
+La producción mensual proxy nacional se define como:
 
 \[
 P^{proxy}_{a,m} = P^{proxy}_{a} \times w_{a,m}
 \]
 
-Y para la base panel:
+Para el panel departamental, la producción mensual se calcula como:
 
 \[
 P_{d,a,m} = P_{d,a} \times w_{a,m}
 \]
 
-Esta etapa permite que la producción anual de los municipios tome una forma mensual coherente con la estacionalidad real observada en el país.
+Esta decisión permite que cada departamento conserve su producción anual observada, pero tome la forma mensual de la estacionalidad nacional observada.
 
 ---
 
-### 6.5 Paso 3: semanalización por proporción de días calendario
+### 6.3 Semanalización por calendario
 
-Para construir la Y semanal, se reemplazó la semanalización climática por una regla de calendario.
-
-La producción mensual proxy se distribuye a semanas ISO usando la proporción de días de cada semana que caen dentro del mes correspondiente.
-
-Para una semana \(s\) y un mes \(m\):
+Para construir la Y semanal, se distribuye cada producción mensual entre los días del mes y luego se asigna a semanas ISO según la cantidad de días de cada semana que caen dentro del mes correspondiente.
 
 \[
-d_{s,m} = \text{número de días de la semana } s \text{ que pertenecen al mes } m
+P^{proxy}_{s} = \sum_{k \in s} \frac{P^{proxy}_{a(k),m(k)}}{D_{a(k),m(k)}}
 \]
 
-\[
-D_m = \text{número total de días del mes } m
-\]
+Donde:
 
-Entonces:
+- `s` es la semana ISO.
+- `k` es cada día dentro de la semana.
+- `a(k)` es el año del día `k`.
+- `m(k)` es el mes del día `k`.
+- `D_{a,m}` es el número de días del mes correspondiente.
 
-\[
-P^{proxy}_{s} = \sum_{m \in s} P^{proxy}_{a,m} \times \frac{d_{s,m}}{D_m}
-\]
+Esta regla preserva exactamente los totales mensuales y anuales, sin utilizar información climática para construir la Y.
 
-Para panel:
+En palabras simples:
 
-\[
-P_{d,s} = \sum_{m \in s} P_{d,a,m} \times \frac{d_{s,m}}{D_m}
-\]
-
-Esta regla preserva exactamente los totales mensuales y, por construcción, también los totales anuales.
+> La producción mensual proxy se reparte por días calendario y cada semana recibe la suma de los días que le corresponden.
 
 ---
 
-### 6.6 Validación obligatoria
+## 7. Por qué no se usa el clima para construir la Y
 
-La base incluye una hoja de validación anual:
+Inicialmente se evaluó usar un índice climático semanal para distribuir la producción mensual entre semanas. Sin embargo, esa alternativa fue descartada para evitar **leakage metodológico**.
 
-```text
-validacion_anual
-```
+Si el clima se usa para construir la Y semanal y luego esas mismas variables climáticas se usan como X, el modelo podría encontrar una correlación artificial inducida por el propio proceso de construcción del target.
 
-La validación comprueba que:
+Por esta razón, la semanalización final se hace por calendario. El clima queda reservado como conjunto de variables explicativas limpias del modelo.
 
-\[
-\sum_{s \in a} P^{proxy}_{s} = P^{proxy}_{a}
-\]
-
-Y para panel:
-
-\[
-\sum_{s \in a} P_{d,s} = P_{d,a}
-\]
-
-Las diferencias son prácticamente cero y corresponden únicamente a precisión numérica.
-
----
-
-## 7. Cambio metodológico frente a la versión anterior
-
-Inicialmente se había considerado usar un índice climático para distribuir la producción mensual entre semanas. Esa idea era útil desde una perspectiva operacional, pero podía generar un problema para la modelación.
-
-Si la Y semanal se construye usando clima, y luego el modelo usa esas mismas variables climáticas como X, el modelo podría encontrar una relación parcialmente inducida por construcción. Esto se conoce como leakage o correlación artificial.
-
-Por esta razón, la versión actual adopta la siguiente decisión:
-
-> El clima no participa en la construcción de la Y semanal. La Y se construye con producción anual, estacionalidad mensual observada y pesos de calendario. Las variables climáticas quedan reservadas como X explicativas.
-
-Texto metodológico recomendado:
+La decisión metodológica puede resumirse así:
 
 > Para construir la variable objetivo semanal, se mantuvo la mensualización basada en la estacionalidad mensual nacional observada y se reemplazó la semanalización climática por una regla de desagregación temporal no climática. En particular, la producción mensual proxy se distribuye a semanas ISO usando pesos de calendario definidos por la proporción de días de cada semana que caen dentro del mes correspondiente, preservando exactamente los totales mensuales. Esta decisión metodológica permite evitar leakage con las variables climáticas semanales, las cuales quedan reservadas como covariables explicativas del modelo. En consecuencia, la serie semanal resultante debe interpretarse como una proxy operativa para simulación, monitoreo y sensibilidad del artefacto, y no como producción semanal observada.
 
 ---
 
-## 8. Fundamento metodológico de la desagregación temporal
+## 8. Índice climático como variable explicativa
 
-La construcción de una serie semanal a partir de una serie mensual se apoya en la literatura de **desagregación temporal** y **benchmarking**, cuyo objetivo es generar series de mayor frecuencia consistentes con agregados observados de menor frecuencia.
+Aunque el índice climático no se utiliza para construir la Y, se conserva como una variable explicativa derivada. Su objetivo es sintetizar información de humedad, precipitación, temperatura y radiación en una señal climática agregada.
 
-Denton propuso un enfoque clásico para ajustar series mensuales o trimestrales a totales anuales mediante minimización cuadrática. Posteriormente, Dagum y Cholette sistematizaron métodos de benchmarking, distribución temporal y reconciliación de series.
-
-Sax y Steiner explican que la desagregación temporal puede realizarse con o sin indicadores de alta frecuencia, preservando sumas, promedios o valores de referencia de la serie original. También señalan que los métodos clásicos funcionan de manera más directa cuando la frecuencia alta es un múltiplo entero de la baja; combinaciones como mes a semana son irregulares, lo cual justifica reglas operativas y trazables cuando se busca preservar coherencia temporal sin introducir señales espurias.
-
-En este proyecto, la transición mes-semana se resuelve con una regla simple: asignar producción mensual a semanas según la proporción de días de cada semana dentro del mes. Esta decisión es transparente, reproducible y evita incorporar clima en la construcción del target.
-
-Referencias:
-
-- Denton, F. T. (1971). *Adjustment of Monthly or Quarterly Series to Annual Totals: An Approach Based on Quadratic Minimization*. Journal of the American Statistical Association.
-- Dagum, E. B., & Cholette, P. (2006). *Benchmarking, Temporal Distribution, and Reconciliation Methods for Time Series*.
-- Sax, C., & Steiner, P. (2013). *Temporal Disaggregation of Time Series*. The R Journal. https://journal.r-project.org/articles/RJ-2013-028/
-- Eurostat / ESS (2018). *ESS Guidelines on Temporal Disaggregation, Benchmarking and Reconciliation*.
-
----
-
-## 9. Índice climático como variable X
-
-Aunque el índice climático ya no se usa para construir la Y semanal, sí se conserva como una variable explicativa derivada.
-
-Esto permite que un modelo robusto pueda evaluar si existe relación entre condiciones climáticas compuestas y la producción semanal proxy, sin que esa relación haya sido inducida artificialmente en el target.
-
-### 9.1 Componentes del índice climático base
-
-El índice climático base combina cuatro dimensiones:
-
-1. Humedad del suelo.
-2. Precipitación.
-3. Temperatura.
-4. Radiación solar.
-
-La fórmula es:
-
-\[
-IC_s = 0.35 \cdot score\_humedad_s
-+ 0.25 \cdot score\_precipitacion_s
-+ 0.25 \cdot score\_temperatura_s
-+ 0.15 \cdot score\_radiacion_s
-\]
-
-Donde \(s\) representa la semana.
-
----
-
-### 9.2 Score de humedad
-
-Se usan las variables:
+En la base aparecen dos variables principales:
 
 ```text
-GWETROOT
-GWETTOP
+indice_climatico_base_x
+indice_climatico_ajustado_x
 ```
 
-Primero se normalizan con min-max:
+Ambas se interpretan como X o variables explicativas, no como parte del target.
+
+---
+
+### 8.1 Normalización min-max
+
+Para algunas variables se usa normalización min-max:
 
 \[
 minmax(x_s) = \frac{x_s - min(x)}{max(x) - min(x)}
 \]
 
-Luego:
-
-\[
-score\_humedad_s =
-\frac{minmax(GWETROOT_s) + minmax(GWETTOP_s)}{2}
-\]
-
-La lógica es capturar tanto humedad superficial como humedad en zona radicular.
+Esto transforma las variables a una escala comparable entre 0 y 1.
 
 ---
 
-### 9.3 Score de precipitación
+### 8.2 Score de humedad
 
-Se usa:
+Se usan dos variables de humedad del suelo:
 
-```text
-PRECTOTCORR
-```
+- `GWETROOT`: humedad en zona radicular.
+- `GWETTOP`: humedad superficial del suelo.
 
-Para evitar que semanas extremadamente lluviosas dominen el índice, la precipitación se capa en el percentil 90:
+\[
+score\_humedad_s = \frac{minmax(GWETROOT_s) + minmax(GWETTOP_s)}{2}
+\]
+
+La lógica es capturar tanto la humedad superficial como la humedad disponible en la zona de raíces, relevante para el cultivo de café.
+
+---
+
+### 8.3 Score de precipitación
+
+La precipitación se calcula con `PRECTOTCORR`. Antes de normalizar, se aplica un cap al percentil 90 para evitar que semanas extremadamente lluviosas dominen el índice.
 
 \[
 PRECTOTCORR^{cap}_s = min(PRECTOTCORR_s, P90(PRECTOTCORR))
 \]
 
-Después:
-
 \[
 score\_precipitacion_s = minmax(PRECTOTCORR^{cap}_s)
 \]
 
----
-
-### 9.4 Score de temperatura
-
-Se usa:
-
-```text
-T2M
-```
-
-El score premia temperaturas cercanas a la mediana histórica del periodo:
-
-\[
-ref\_temp = mediana(T2M)
-\]
-
-\[
-score\_temperatura_s =
-1 - \frac{|T2M_s - ref\_temp|}{max(|T2M - ref\_temp|)}
-\]
-
-Esto evita asumir que mayor temperatura siempre es mejor.
+Esto reconoce que la lluvia puede ser favorable hasta cierto punto, pero que valores extremos no deben incrementar indefinidamente el score climático.
 
 ---
 
-### 9.5 Score de radiación
+### 8.4 Score de temperatura
 
-Se usa:
+La temperatura se evalúa respecto a la mediana histórica de `T2M`.
 
-```text
-ALLSKY_SFC_SW_DWN
-```
+\[
+score\_temperatura_s = 1 - \frac{|T2M_s - mediana(T2M)|}{max(|T2M - mediana(T2M)|)}
+\]
 
-Y se normaliza con min-max:
+Esta formulación evita asumir que una mayor temperatura siempre es mejor. Las semanas con temperatura cercana a la mediana reciben mayor score; las semanas con temperaturas muy alejadas reciben menor score.
+
+---
+
+### 8.5 Score de radiación
+
+La radiación se calcula a partir de `ALLSKY_SFC_SW_DWN`:
 
 \[
 score\_radiacion_s = minmax(ALLSKY\_SFC\_SW\_DWN_s)
 \]
 
+La radiación se incluye por su relación con fotosíntesis y desarrollo del cultivo, aunque con menor peso que humedad, precipitación y temperatura.
+
 ---
 
-### 9.6 Índice climático ajustado
+### 8.6 Índice climático base
 
-Además del índice base, se conserva una versión suavizada:
+El índice climático base combina los cuatro scores:
+
+\[
+IC_s = 0.35 \cdot score\_humedad_s + 0.25 \cdot score\_precipitacion_s + 0.25 \cdot score\_temperatura_s + 0.15 \cdot score\_radiacion_s
+\]
+
+Pesos utilizados:
+
+| Componente | Peso |
+|-----------|-----:|
+| Humedad del suelo | 0.35 |
+| Precipitación | 0.25 |
+| Temperatura | 0.25 |
+| Radiación | 0.15 |
+
+En la base se llama:
+
+```text
+indice_climatico_base_x
+```
+
+---
+
+### 8.7 Índice climático ajustado
+
+El índice ajustado suaviza el índice base:
 
 \[
 IC^{ajustado}_s = 0.70 + 0.30 \cdot IC_s
 \]
 
-En la base aparece como:
+En la base se llama:
 
 ```text
 indice_climatico_ajustado_x
 ```
 
-En la versión anterior, este índice ajustado iba a usarse para repartir producción entre semanas. En la versión actual, **solo queda como X**, no como componente de la Y.
+En esta versión, el índice ajustado no se usa para repartir producción. Se conserva como variable explicativa agregada o variable de control climático.
 
 ---
 
-## 10. Variables económicas y transformaciones
+## 9. Fundamento metodológico de la desagregación temporal
 
-Las variables económicas se conservan porque pueden aportar señales de contexto financiero y de mercado.
+La construcción de una serie semanal a partir de una serie mensual se apoya en la literatura de desagregación temporal y benchmarking, cuyo objetivo es obtener series de mayor frecuencia consistentes con agregados observados de menor frecuencia.
 
-### 10.1 Precio interno
+Denton propuso un enfoque clásico de ajuste de series subanuales a totales observados, ampliamente usado en estadística aplicada. Dagum y Cholette desarrollaron métodos de benchmarking, distribución temporal y reconciliación de series. Sax y Steiner sintetizan estos métodos y explican que la desagregación temporal puede realizarse con o sin indicadores de alta frecuencia, preservando sumas, promedios o valores de referencia de la serie original.
 
-Variable base:
+Una consideración importante es que los métodos clásicos funcionan de manera más natural cuando la frecuencia alta es múltiplo entero de la frecuencia baja. La transición mes a semana es irregular, porque los meses no tienen un número entero y constante de semanas. Por eso, en este proyecto se adopta una regla operativa, trazable y no climática basada en días calendario.
+
+Esta decisión permite conservar coherencia temporal sin introducir señales espurias en la relación entre clima y producción.
+
+---
+
+## 10. Reglas de agregación semanal, mensual y anual
+
+Para la fase de experimentación se generan bases mensual y anual a partir de la base semanal.
+
+### 10.1 Target mensual
+
+La producción mensual del panel se recupera como suma de semanas dentro del mismo departamento-año-mes:
+
+\[
+Y^{(m)}_{d,a,m} = \sum_{s \in (d,a,m)} Y^{(w)}_{d,a,m,s}
+\]
+
+### 10.2 Target anual
+
+La producción anual se recupera como suma de meses dentro del mismo departamento-año:
+
+\[
+Y^{(a)}_{d,a} = \sum_{m=1}^{12} Y^{(m)}_{d,a,m}
+\]
+
+### 10.3 Variables estructurales repetidas
+
+Las variables anuales o mensuales repetidas a nivel semanal no se suman múltiples veces. Se conservan usando el primer valor del grupo, luego de validar que sean constantes dentro del periodo.
+
+Ejemplos:
+
+- `produccion_mensual_proxy_t`
+- `produccion_anual_departamental_t`
+- `area_cosechada_departamental_ha`
+- `rendimiento_departamental_t_ha`
+- `valor_cosecha_anual_millones`
+
+### 10.4 Variables climáticas
+
+Las variables climáticas se agregan según su naturaleza:
+
+| Tipo de variable | Regla sugerida | Ejemplos |
+|------------------|----------------|----------|
+| Flujo / acumulación | Suma | precipitación, lluvia acumulada |
+| Estado / intensidad | Promedio | temperatura, humedad, radiación, viento |
+| Eventos binarios | Máximo o promedio | dummies de exceso de lluvia, estrés hídrico, temperatura alta |
+
+Para dummies, el máximo indica si el evento ocurrió al menos una vez en el periodo, mientras que el promedio indica proporción de semanas afectadas.
+
+---
+
+## 11. Uso de variables en modelamiento
+
+### 11.1 Target principal semanal
 
 ```text
-precio_interno_cop_carga
-```
-
-Transformaciones recomendadas:
-
-```text
-precio_interno_cop_carga_lag_1s
-precio_interno_cop_carga_lag_4s
-precio_interno_cop_carga_ma_4s
-precio_interno_cop_carga_var_4s
-dummy_precio_interno_alto_p75
+produccion_semanal_proxy_t
 ```
 
 Interpretación:
 
-> El precio interno puede reflejar condiciones de oferta, demanda, tasa de cambio, expectativas y dinámica del mercado cafetero. Por esta razón, se recomienda usarlo con rezagos y no necesariamente como señal contemporánea directa.
+> Producción semanal estimada como proxy operativa, no observada directamente.
 
----
+### 11.2 Variables climáticas centrales
 
-### 10.2 Precio externo
-
-Variable base:
-
-```text
-precio_externo_exdock_cent_usd_lb
-```
-
-Transformaciones:
-
-```text
-precio_externo_exdock_cent_usd_lb_lag_4s
-precio_externo_exdock_cent_usd_lb_ma_4s
-precio_externo_exdock_cent_usd_lb_var_4s
-```
-
----
-
-### 10.3 Exportaciones
-
-Variable base:
-
-```text
-exportaciones_mensual_miles_sacos
-```
-
-Uso recomendado:
-
-- contexto de mercado;
-- análisis descriptivo;
-- validación económica;
-- rezagos para evitar simultaneidad.
-
----
-
-### 10.4 TRM / dólar
-
-La TRM se incorpora como variable económica de contexto porque cambios en la tasa de cambio pueden afectar costos de insumos importados como fertilizantes, agroquímicos, maquinaria o repuestos.
-
-Variable principal:
-
-```text
-trm_viernes_cop_usd
-```
-
-Regla de armonización semanal:
-
-> Se toma la TRM del viernes de cada semana o, en ausencia de dato por festivo/no hábil, el último dato disponible anterior.
-
-Transformaciones recomendadas:
-
-```text
-trm_viernes_cop_usd_lag_1s
-trm_viernes_cop_usd_lag_4s
-trm_viernes_cop_usd_ma_4s
-trm_viernes_cop_usd_var_4s
-dummy_trm_alta_p75
-dummy_devaluacion_4s_p75
-```
-
-Nota: si el script se ejecuta sin conexión a internet, las columnas TRM quedan vacías y se pueden poblar al ejecutar nuevamente el script con acceso a la API de Datos Abiertos Colombia.
-
----
-
-## 11. Variables que sí pueden usarse como X
-
-### 11.1 X climáticas centrales
+Estas variables pueden ser usadas como X principales para riesgo climático:
 
 ```text
 PRECTOTCORR
@@ -580,7 +436,7 @@ ALLSKY_SFC_SW_DWN
 WS2M
 ```
 
-### 11.2 X climáticas derivadas
+### 11.3 Variables climáticas derivadas
 
 ```text
 score_humedad
@@ -595,11 +451,19 @@ anomalia_lluvia_semana_iso
 dummy_exceso_lluvia_p75
 dummy_estres_hidrico_p25
 dummy_temp_max_alta_p75
-dummy_indice_climatico_bajo_p25
-dummy_indice_climatico_alto_p75
 ```
 
-### 11.3 X económicas de contexto
+### 11.4 Variables económicas de contexto
+
+```text
+precio_interno_cop_carga
+precio_externo_exdock_cent_usd_lb
+exportaciones_mensual_miles_sacos
+trm_viernes_cop_usd
+trm_ultimo_dia_semana_cop_usd
+```
+
+Variables transformadas útiles:
 
 ```text
 precio_interno_cop_carga_lag_1s
@@ -608,148 +472,215 @@ precio_interno_cop_carga_ma_4s
 precio_interno_cop_carga_var_4s
 precio_externo_exdock_cent_usd_lb_lag_4s
 precio_externo_exdock_cent_usd_lb_ma_4s
-precio_externo_exdock_cent_usd_lb_var_4s
 exportaciones_mensual_miles_sacos_lag_4s
 exportaciones_mensual_miles_sacos_ma_4s
-exportaciones_mensual_miles_sacos_var_4s
+trm_viernes_cop_usd_lag_1s
 trm_viernes_cop_usd_lag_4s
 trm_viernes_cop_usd_ma_4s
 trm_viernes_cop_usd_var_4s
 ```
 
----
+Estas variables no definen el índice climático, pero pueden aportar señales de mercado, costos, presión cambiaria, comercialización y exposición económica.
 
-## 12. Variables que NO deberían usarse como X contra la Y semanal
+### 11.5 Variables que deben evitarse como X para predecir la Y semanal
 
-Aunque están en la base por trazabilidad, estas variables participan en la construcción de la Y o son controles directos. Por tanto, no deberían usarse como predictores de `produccion_semanal_proxy_t`:
+Estas variables participan en la construcción, valorización o explicación directa del target y pueden inducir leakage si se usan como X en el modelo semanal:
 
 ```text
 produccion_anual_proxy_5mun_t
-produccion_anual_depto_mun_t
+produccion_anual_departamental_t
+produccion_mensual_proxy_t
+peso_mensual_prod_nacional
 produccion_nacional_mensual_oficial_miles_sacos
-peso_mensual_prod_nacional_principal
-produccion_mensual_proxy_principal_t
-dias_asignados_semana
-detalle_meses_asignados
-metodo_y
-tipo_target
+valor_cosecha_semanal_proxy_millones
 ```
-
-Estas variables se conservan para auditoría, validación y explicación metodológica, pero no como X del modelo semanal principal.
 
 ---
 
-## 13. Recomendación de modelamiento
+## 12. Estrategia de modelamiento multi-frecuencia
 
-### 13.1 Modelo semanal operacional
+La implementación se estructura en tres niveles: semanal, mensual y anual.
 
-Target:
+### 12.1 Modelamiento semanal
+
+El modelamiento semanal se interpreta como una capa operativa. Permite monitoreo, sensibilidad y simulación del artefacto. En esta frecuencia se comparan modelos lineales regularizados, árboles y boosting con distintos subconjuntos de variables climáticas, derivadas y económicas.
+
+Modelos probados:
+
+- Dummy mean
+- Ridge baseline
+- Ridge con clima crudo
+- Ridge con clima derivado
+- Ridge con índice agregado
+- Random Forest con clima crudo
+- Random Forest con clima derivado
+- Random Forest con clima derivado + económicas
+- XGBoost con clima derivado
+
+Modelo seleccionado:
 
 ```text
-produccion_semanal_proxy_t
+V7_clima_mas_economicas_rf
 ```
 
-Uso:
+Lectura metodológica:
 
-- simulación;
-- sensibilidad;
-- monitoreo;
-- identificación de señales climáticas y económicas;
-- soporte para prototipo de seguro indexado.
-
-Interpretación:
-
-> El modelo semanal no predice producción semanal observada, sino variaciones de una proxy operativa construida con producción anual observada, estacionalidad mensual real y asignación calendario.
+El mejor resultado semanal correspondió a un Random Forest con clima derivado y variables económicas. Sin embargo, el resultado debe interpretarse como capa de monitoreo y simulación, no como validación climática pura, debido a que la Y semanal es una proxy operativa y el componente territorial puede dominar parte del ajuste.
 
 ---
 
-### 13.2 Modelo panel semanal
+### 12.2 Modelamiento mensual
 
-Target:
+El modelamiento mensual funciona como puente entre consistencia productiva y utilidad operativa. En esta frecuencia se comparan modelos con clima, clima + economía y clima + economía + estructura productiva.
+
+Modelos probados:
+
+- Dummy mean
+- Ridge baseline
+- Ridge con clima
+- Ridge con clima + economía
+- Random Forest con clima
+- Random Forest con clima + economía
+- Random Forest con clima + economía + estructurales
+- XGBoost con clima + economía
+
+Modelos seleccionados:
 
 ```text
-produccion_semanal_proxy_t
+M6_clima_econ_struct_rf
+M5_clima_econ_rf
 ```
 
-Unidad:
+Lectura metodológica:
+
+`M6_clima_econ_struct_rf` se conserva como mejor ajuste operativo mensual. Sin embargo, debido a que incorpora variables estructurales como área cosechada, también se conserva `M5_clima_econ_rf` como referencia más limpia para interpretar el componente climático y económico del seguro indexado.
+
+---
+
+### 12.3 Modelamiento anual
+
+El modelamiento anual permite contrastar si las variables climáticas agregadas anualmente logran explicar producción o rendimiento frente a un baseline territorial-temporal.
+
+Targets considerados:
 
 ```text
-departamento - semana
+rendimiento_departamental_t_ha
+produccion_anual_departamental_t
 ```
 
-Ventajas:
+Modelos probados:
 
-- más observaciones;
-- heterogeneidad territorial;
-- posibilidad de incluir efectos por departamento;
-- permite validar si las señales climáticas se comportan distinto entre zonas.
+- Dummy mean
+- Ridge baseline
+- Ridge con clima
+- Ridge con clima + economía
 
----
-
-### 13.3 Modelo anual complementario
-
-Para una validación más estricta, se recomienda un modelo anual complementario.
-
-Targets posibles:
+Modelo seleccionado:
 
 ```text
-produccion_anual_proxy_5mun_t
-rendimiento_proxy_t_ha
-produccion_anual_depto_mun_t
-rendimiento_depto_mun_t_ha
+A1_baseline_ridge
 ```
 
-En ese caso, las variables semanales deben agregarse a ventanas anuales o fenológicas:
+Lectura metodológica:
 
-- lluvia acumulada anual;
-- lluvia en semanas críticas;
-- humedad promedio trimestral;
-- temperatura máxima promedio;
-- semanas con exceso de lluvia;
-- semanas con estrés hídrico;
-- precio interno promedio con rezagos;
-- TRM promedio o variación anual.
+Los resultados mostraron que el mejor desempeño anual correspondió al baseline Ridge. Esto sugiere que, con solo 20 observaciones y clima agregado a escala anual, la señal climática no fue suficiente para superar el componente estructural-territorial. Esta capa anual se interpreta como contraste metodológico y documentación de limitaciones.
 
 ---
 
-## 14. Diccionario resumido de variables principales
+## 13. Modelos seleccionados para la herramienta analítica
 
-| Variable | Tipo | Descripción | Uso recomendado |
-|---|---|---|---|
-| `produccion_semanal_proxy_t` | Y proxy | Producción semanal proxy en toneladas | Target semanal |
-| `produccion_anual_proxy_5mun_t` | Control / Y anual | Suma anual de los cinco municipios | Target anual o validación |
-| `produccion_anual_depto_mun_t` | Control / Y anual panel | Producción anual del municipio representativo del departamento | Target anual panel |
-| `produccion_nacional_mensual_oficial_miles_sacos` | Benchmark temporal | Producción mensual nacional usada para estacionalidad | No usar como X semanal |
-| `peso_mensual_prod_nacional_principal` | Benchmark temporal | Participación mensual en la producción anual nacional | No usar como X semanal |
-| `PRECTOTCORR` | X climática | Precipitación corregida | X central |
-| `T2M` | X climática | Temperatura media | X central |
-| `T2M_MAX` | X climática | Temperatura máxima | X estrés térmico |
-| `GWETTOP` | X climática | Humedad superficial del suelo | X central |
-| `GWETROOT` | X climática | Humedad radicular | X central |
-| `indice_climatico_base_x` | X derivada | Índice compuesto climático | X explicativa |
-| `indice_climatico_ajustado_x` | X derivada | Índice climático suavizado | X explicativa opcional |
-| `lluvia_acum_4s` | X derivada | Lluvia acumulada 4 semanas | X con rezago hidrológico |
-| `lluvia_acum_8s` | X derivada | Lluvia acumulada 8 semanas | X con rezago hidrológico |
-| `precio_interno_cop_carga` | X económica | Precio interno semanal | Usar rezagos/medias |
-| `precio_externo_exdock_cent_usd_lb` | X económica | Precio externo mensual asignado a semana | Usar rezagos |
-| `exportaciones_mensual_miles_sacos` | X económica | Exportaciones mensuales asignadas a semana | Usar rezagos |
-| `trm_viernes_cop_usd` | X económica | TRM viernes o último hábil anterior | Usar rezagos/medias |
-| `valor_cosecha_anual_millones_cop` | Financiera | Valor anual de cosecha | Exposición/severidad |
+| Frecuencia | Modelo seleccionado | Rol en el artefacto |
+|-----------|---------------------|---------------------|
+| Semanal | `V7_clima_mas_economicas_rf` | Monitoreo, sensibilidad y simulación operativa |
+| Mensual | `M6_clima_econ_struct_rf` | Mejor ajuste operativo mensual |
+| Mensual alternativo | `M5_clima_econ_rf` | Lectura más limpia del componente climático-económico |
+| Anual | `A1_baseline_ridge` | Contraste metodológico anual |
 
 ---
 
-## 15. Conclusión metodológica
+## 14. Conclusiones del modelamiento
 
-La versión actual del cubo mejora la defensa del proyecto porque separa claramente la construcción del target de las variables explicativas climáticas.
-
-La Y semanal se construye con:
-
-1. producción anual observada de los municipios seleccionados;
-2. estacionalidad mensual nacional observada;
-3. regla calendario de días por semana.
-
-Las X climáticas, incluyendo el índice climático base y ajustado, quedan disponibles para modelación sin haber sido usadas para crear la Y.
-
-Esta separación permite correr modelos más robustos y argumentar que cualquier relación encontrada entre clima y producción semanal proxy no fue inducida directamente por la construcción del target.
+1. No existe un único modelo dominante para todos los propósitos del proyecto.
+2. La capa semanal es útil para monitoreo operativo, sensibilidad y simulación del artefacto.
+3. La capa mensual es la frecuencia intermedia más útil para conectar señales climáticas, económicas y productivas.
+4. La capa anual sirve como contraste metodológico, pero no como núcleo final del artefacto por el tamaño reducido de la muestra.
+5. Las variables climáticas deben interpretarse como señales explicativas del riesgo, no como garantía causal automática de pérdida productiva.
+6. La heterogeneidad territorial y la estructura productiva siguen siendo determinantes importantes.
+7. El artefacto se justifica mejor como herramienta integrada de monitoreo, comparación territorial, simulación de escenarios y apoyo a primas/triggers, más que como un único modelo predictivo climático puro.
 
 ---
+
+## 15. Limitaciones documentadas
+
+- La variable objetivo semanal no es producción observada, sino una proxy operativa.
+- La mensualización y semanalización preservan coherencia temporal, pero no reemplazan observaciones reales de alta frecuencia.
+- El modelamiento semanal puede estar influenciado por heterogeneidad territorial.
+- El modelamiento mensual mejora utilidad operativa, pero el mejor ajuste puede incorporar variables estructurales que dominan parte de la señal climática.
+- El modelamiento anual tiene una muestra reducida, lo que limita la estabilidad de métricas y la capacidad de capturar relaciones climáticas complejas.
+- Los promedios climáticos anuales pueden suavizar eventos extremos o ventanas críticas relevantes para café.
+- Las variables económicas deben interpretarse como contexto de mercado y exposición financiera, no como drivers climáticos directos.
+
+---
+
+## 16. Diccionario resumido de variables clave
+
+| Variable | Tipo | Uso recomendado |
+|----------|------|-----------------|
+| `produccion_semanal_proxy_t` | Target semanal | Y principal operativa |
+| `produccion_mensual_proxy_t` | Productiva construida | Validación/agregación; evitar como X semanal |
+| `produccion_anual_departamental_t` | Productiva observada/anual | Target anual o control estructural; evitar como X semanal si predice Y semanal |
+| `area_cosechada_departamental_ha` | Estructural | Útil en modelos operativos mensuales/anuales |
+| `rendimiento_departamental_t_ha` | Productiva/eficiencia | Target anual alternativo |
+| `PRECTOTCORR` | Climática | X central de precipitación |
+| `IMERG_PRECTOT` | Climática | X central de precipitación alternativa |
+| `T2M` | Climática | X central de temperatura media |
+| `T2M_MAX` | Climática | X de estrés térmico |
+| `T2M_MIN` | Climática | X de temperatura mínima |
+| `RH2M` | Climática | X de humedad relativa |
+| `QV2M` | Climática | X de humedad específica |
+| `GWETTOP` | Climática | X de humedad superficial |
+| `GWETROOT` | Climática | X de humedad radicular |
+| `ALLSKY_SFC_SW_DWN` | Climática | X de radiación |
+| `WS2M` | Climática | X de viento |
+| `indice_climatico_base_x` | Climática derivada | X agregada de clima |
+| `indice_climatico_ajustado_x` | Climática derivada | X agregada suavizada |
+| `lluvia_acum_4s` | Climática derivada | X de acumulado corto |
+| `lluvia_acum_8s` | Climática derivada | X de acumulado medio |
+| `anomalia_lluvia_semana_iso` | Climática derivada | X de desviación frente a patrón semanal |
+| `precio_interno_cop_carga` | Económica | Contexto de mercado interno |
+| `precio_externo_exdock_cent_usd_lb` | Económica | Contexto de mercado externo |
+| `exportaciones_mensual_miles_sacos` | Económica | Contexto comercial |
+| `trm_viernes_cop_usd` | Económica | Presión cambiaria / costo de insumos importados |
+| `valor_cosecha_anual_millones` | Financiera | Exposición económica; no usar como X para Y semanal |
+
+
+---
+
+## 17. Uso esperado del artefacto
+
+El artefacto analítico no se limita a predecir producción. Su valor está en integrar capas de información para apoyar decisiones de aseguramiento:
+
+- monitoreo semanal del riesgo climático;
+- comparación territorial entre departamentos cafeteros;
+- simulación de escenarios de estrés climático;
+- análisis de sensibilidad frente a variables económicas;
+- estimación de exposición económica;
+- soporte para calibración de primas;
+- exploración de triggers climáticos para seguros indexados.
+
+---
+
+## 19. Referencias metodológicas
+
+- Denton, F. T. (1971). *Adjustment of Monthly or Quarterly Series to Annual Totals: An Approach Based on Quadratic Minimization*. Journal of the American Statistical Association.
+- Dagum, E. B., & Cholette, P. (2006). *Benchmarking, Temporal Distribution, and Reconciliation Methods for Time Series*.
+- Sax, C., & Steiner, P. (2013). *Temporal Disaggregation of Time Series*. The R Journal.
+- Eurostat / ESS Guidelines (2018). *ESS Guidelines on Temporal Disaggregation, Benchmarking and Reconciliation*.
+
+---
+
+## 20. Nota final
+
+Este proyecto debe interpretarse como una aproximación analítica progresiva para un seguro agrícola indexado. La base semanal permite operación y simulación, la base mensual mejora la estabilidad del análisis y la base anual sirve como contraste metodológico frente a la frecuencia original de la producción observada.
+
+La principal decisión metodológica fue separar la construcción del target semanal de las variables climáticas, para conservar el clima como señal explicativa limpia dentro del modelamiento. Esto permite que los modelos exploren relaciones entre clima, economía y producción proxy sin inducir correlaciones artificiales por construcción de la Y.
