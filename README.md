@@ -149,37 +149,37 @@ Su uso principal es operativo: monitoreo, simulación, sensibilidad y modelamien
 
 Para cada año `a`, la producción anual observada de los cinco municipios se agrega como:
 
-\[
+$$
 P^{proxy}_{a} = \sum_{d=1}^{5} P_{d,a}
-\]
+$$
 
 Donde:
 
-- `P^{proxy}_{a}` es la producción anual de la proxy nacional.
-- `P_{d,a}` es la producción anual del departamento o municipio representativo `d` en el año `a`.
+- $P^{proxy}_{a}$ es la producción anual de la proxy nacional.
+- $P_{d,a}$ es la producción anual del departamento o municipio representativo `d` en el año `a`.
 
 Luego se calcula el peso mensual nacional observado:
 
-\[
+$$
 w_{a,m} = \frac{PN_{a,m}}{\sum_{m=1}^{12} PN_{a,m}}
-\]
+$$
 
 Donde:
 
-- `PN_{a,m}` es la producción nacional mensual oficial en el año `a` y mes `m`.
-- `w_{a,m}` representa la participación del mes dentro de la producción anual nacional.
+- $PN_{a,m}$ es la producción nacional mensual oficial en el año `a` y mes `m`.
+- $w_{a,m}$ representa la participación del mes dentro de la producción anual nacional.
 
 La producción mensual proxy nacional se define como:
 
-\[
+$$
 P^{proxy}_{a,m} = P^{proxy}_{a} \times w_{a,m}
-\]
+$$
 
 Para el panel departamental, la producción mensual se calcula como:
 
-\[
+$$
 P_{d,a,m} = P_{d,a} \times w_{a,m}
-\]
+$$
 
 Esta decisión permite que cada departamento conserve su producción anual observada, pero tome la forma mensual de la estacionalidad nacional observada.
 
@@ -189,9 +189,9 @@ Esta decisión permite que cada departamento conserve su producción anual obser
 
 Para construir la Y semanal, se distribuye cada producción mensual entre los días del mes y luego se asigna a semanas ISO según la cantidad de días de cada semana que caen dentro del mes correspondiente.
 
-\[
+$$
 P^{proxy}_{s} = \sum_{k \in s} \frac{P^{proxy}_{a(k),m(k)}}{D_{a(k),m(k)}}
-\]
+$$
 
 Donde:
 
@@ -242,9 +242,9 @@ Ambas se interpretan como X o variables explicativas, no como parte del target.
 
 Para algunas variables se usa normalización min-max:
 
-\[
+$$
 minmax(x_s) = \frac{x_s - min(x)}{max(x) - min(x)}
-\]
+$$
 
 Esto transforma las variables a una escala comparable entre 0 y 1.
 
@@ -257,9 +257,9 @@ Se usan dos variables de humedad del suelo:
 - `GWETROOT`: humedad en zona radicular.
 - `GWETTOP`: humedad superficial del suelo.
 
-\[
+$$
 score\_humedad_s = \frac{minmax(GWETROOT_s) + minmax(GWETTOP_s)}{2}
-\]
+$$
 
 La lógica es capturar tanto la humedad superficial como la humedad disponible en la zona de raíces, relevante para el cultivo de café.
 
@@ -269,13 +269,13 @@ La lógica es capturar tanto la humedad superficial como la humedad disponible e
 
 La precipitación se calcula con `PRECTOTCORR`. Antes de normalizar, se aplica un cap al percentil 90 para evitar que semanas extremadamente lluviosas dominen el índice.
 
-\[
+$$
 PRECTOTCORR^{cap}_s = min(PRECTOTCORR_s, P90(PRECTOTCORR))
-\]
+$$
 
-\[
+$$
 score\_precipitacion_s = minmax(PRECTOTCORR^{cap}_s)
-\]
+$$
 
 Esto reconoce que la lluvia puede ser favorable hasta cierto punto, pero que valores extremos no deben incrementar indefinidamente el score climático.
 
@@ -285,9 +285,9 @@ Esto reconoce que la lluvia puede ser favorable hasta cierto punto, pero que val
 
 La temperatura se evalúa respecto a la mediana histórica de `T2M`.
 
-\[
+$$
 score\_temperatura_s = 1 - \frac{|T2M_s - mediana(T2M)|}{max(|T2M - mediana(T2M)|)}
-\]
+$$
 
 Esta formulación evita asumir que una mayor temperatura siempre es mejor. Las semanas con temperatura cercana a la mediana reciben mayor score; las semanas con temperaturas muy alejadas reciben menor score.
 
@@ -297,9 +297,9 @@ Esta formulación evita asumir que una mayor temperatura siempre es mejor. Las s
 
 La radiación se calcula a partir de `ALLSKY_SFC_SW_DWN`:
 
-\[
+$$
 score\_radiacion_s = minmax(ALLSKY\_SFC\_SW\_DWN_s)
-\]
+$$
 
 La radiación se incluye por su relación con fotosíntesis y desarrollo del cultivo, aunque con menor peso que humedad, precipitación y temperatura.
 
@@ -309,9 +309,9 @@ La radiación se incluye por su relación con fotosíntesis y desarrollo del cul
 
 El índice climático base combina los cuatro scores:
 
-\[
+$$
 IC_s = 0.35 \cdot score\_humedad_s + 0.25 \cdot score\_precipitacion_s + 0.25 \cdot score\_temperatura_s + 0.15 \cdot score\_radiacion_s
-\]
+$$
 
 Pesos utilizados:
 
@@ -334,9 +334,9 @@ indice_climatico_base_x
 
 El índice ajustado suaviza el índice base:
 
-\[
+$$
 IC^{ajustado}_s = 0.70 + 0.30 \cdot IC_s
-\]
+$$
 
 En la base se llama:
 
@@ -368,17 +368,17 @@ Para la fase de experimentación se generan bases mensual y anual a partir de la
 
 La producción mensual del panel se recupera como suma de semanas dentro del mismo departamento-año-mes:
 
-\[
+$$
 Y^{(m)}_{d,a,m} = \sum_{s \in (d,a,m)} Y^{(w)}_{d,a,m,s}
-\]
+$$
 
 ### 10.2 Target anual
 
 La producción anual se recupera como suma de meses dentro del mismo departamento-año:
 
-\[
+$$
 Y^{(a)}_{d,a} = \sum_{m=1}^{12} Y^{(m)}_{d,a,m}
-\]
+$$
 
 ### 10.3 Variables estructurales repetidas
 
