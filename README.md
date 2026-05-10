@@ -497,128 +497,202 @@ valor_cosecha_semanal_proxy_millones
 
 ---
 
-## 12. Estrategia de modelamiento multi-frecuencia
+## 12. Estrategia de modelamiento y criterios técnicos
 
-La implementación se estructura en tres niveles: semanal, mensual y anual.
+La fase de modelamiento del Módulo 2 se organizó en tres frecuencias complementarias: weekly, monthly y annual. La lógica no fue encontrar un único modelo dominante para todo el proyecto, sino identificar qué combinación de variables, frecuencia y técnica ofrecía mayor valor según el rol esperado dentro del artefacto.
 
-### 12.1 Modelamiento semanal
+- **Weekly:** capa operativa para monitoreo, sensibilidad y simulación.
+- **Monthly:** capa intermedia para equilibrar utilidad operativa y consistencia productiva.
+- **Annual:** capa de contraste metodológico y validación más conservadora.
 
-El modelamiento semanal se interpreta como una capa operativa. Permite monitoreo, sensibilidad y simulación del artefacto. En esta frecuencia se comparan modelos lineales regularizados, árboles y boosting con distintos subconjuntos de variables climáticas, derivadas y económicas.
+La selección de familias de modelos respondió a cuatro criterios principales: (i) tamaño muestral disponible, (ii) interpretabilidad, (iii) capacidad para capturar relaciones no lineales y (iv) riesgo de sobreajuste.
 
-Modelos probados:
+### 12.1 Modelos candidatos por frecuencia
 
-- Dummy mean
-- Ridge baseline
-- Ridge con clima crudo
-- Ridge con clima derivado
-- Ridge con índice agregado
-- Random Forest con clima crudo
-- Random Forest con clima derivado
-- Random Forest con clima derivado + económicas
-- XGBoost con clima derivado
+| Frecuencia | Modelos candidatos | Motivo técnico de inclusión |
+|---|---|---|
+| Weekly | Dummy, Ridge, Random Forest, XGBoost | Mayor número de observaciones; permite comparar modelos lineales y no lineales para capturar dinámica operativa. |
+| Monthly | Dummy, Ridge, Random Forest, XGBoost | Frecuencia intermedia con tamaño muestral suficiente para comparar interpretabilidad vs. flexibilidad. |
+| Annual | Dummy, Ridge | Muestra reducida (20 observaciones); se privilegió parsimonia y estabilidad sobre complejidad. |
 
-Modelo seleccionado:
+### 12.2 Supuestos y criterios metodológicos
 
-```text
-V7_clima_mas_economicas_rf
-```
+Los modelos lineales regularizados se usaron como baselines interpretables y parsimoniosos. En particular, RidgeCV fue útil cuando existía posible multicolinealidad entre covariables y se buscaba estabilidad fuera de muestra. De forma esquemática, Ridge minimiza:
 
-Lectura metodológica:
+$$
+\min_{\beta} \sum_i (y_i - x_i'\beta)^2 + \lambda \sum_j \beta_j^2
+$$
 
-El mejor resultado semanal correspondió a un Random Forest con clima derivado y variables económicas. Sin embargo, el resultado debe interpretarse como capa de monitoreo y simulación, no como validación climática pura, debido a que la Y semanal es una proxy operativa y el componente territorial puede dominar parte del ajuste.
+donde $\lambda$ controla el grado de regularización.
 
----
+Los modelos basados en árboles se incluyeron para capturar relaciones no lineales, interacciones y posibles umbrales entre clima, economía y estructura productiva. Random Forest se usó como alternativa robusta de bagging, mientras XGBoost se probó como versión boosting en weekly y monthly, donde el número de observaciones justificaba esa comparación. En annual no se emplearon modelos más complejos debido al alto riesgo de sobreajuste con una muestra tan pequeña.
 
-### 12.2 Modelamiento mensual
+Además, la selección de variables se hizo bajo control explícito de leakage: no se incluyeron como covariables aquellas variables que participaban directamente en la construcción del target proxy o que incorporaban información futura incompatible con el esquema de validación temporal.
 
-El modelamiento mensual funciona como puente entre consistencia productiva y utilidad operativa. En esta frecuencia se comparan modelos con clima, clima + economía y clima + economía + estructura productiva.
+### 12.3 Esquema experimental y métricas
 
-Modelos probados:
+Todas las corridas siguieron un split temporal consistente:
 
-- Dummy mean
-- Ridge baseline
-- Ridge con clima
-- Ridge con clima + economía
-- Random Forest con clima
-- Random Forest con clima + economía
-- Random Forest con clima + economía + estructurales
-- XGBoost con clima + economía
+- **Entrenamiento:** 2021–2022
+- **Validación:** 2023
+- **Prueba:** 2024
 
-Modelos seleccionados:
+Esta decisión buscó emular un escenario real de generalización hacia adelante, evitando fuga de información futura y preservando coherencia cronológica.
 
-```text
-M6_clima_econ_struct_rf
-M5_clima_econ_rf
-```
+Las métricas reportadas fueron:
 
-Lectura metodológica:
+- **RMSE**: penaliza con mayor fuerza errores grandes.
+- **MAE**: resume el error absoluto promedio.
+- **MAPE**: facilita interpretar el error relativo.
+- **R²**: resume la capacidad explicativa del modelo.
+- **Corr**: se utilizó como métrica complementaria para evaluar si el modelo preservaba la dirección general de la dinámica observada, especialmente en contextos con muestras pequeñas o compresión del rango.
 
-`M6_clima_econ_struct_rf` se conserva como mejor ajuste operativo mensual. Sin embargo, debido a que incorpora variables estructurales como área cosechada, también se conserva `M5_clima_econ_rf` como referencia más limpia para interpretar el componente climático y económico del seguro indexado.
+Además del desempeño predictivo, se realizaron verificaciones de consistencia sobre semanas incompletas, agregación weekly → monthly → annual y control de leakage en la selección de covariables.
 
 ---
 
-### 12.3 Modelamiento anual
+## 13. Resultados por frecuencia y criterios de selección
 
-El modelamiento anual permite contrastar si las variables climáticas agregadas anualmente logran explicar producción o rendimiento frente a un baseline territorial-temporal.
+La estrategia multi-frecuencia permitió comparar alternativas de modelamiento y, más importante aún, reubicar cada resultado dentro de la arquitectura final del artefacto. La selección final no respondió a un único criterio de error predictivo, sino a la combinación entre desempeño, interpretabilidad, escala temporal y utilidad dentro del sistema.
 
-Targets considerados:
+### 13.1 Resultados weekly
 
-```text
-rendimiento_departamental_t_ha
-produccion_anual_departamental_t
-```
+En frecuencia weekly se compararon modelos Dummy, Ridge, Random Forest y XGBoost con diferentes subconjuntos de variables climáticas, derivadas y económicas. Los mejores resultados se concentraron en modelos no lineales, especialmente Random Forest y XGBoost. La comparación principal se resume así:
 
-Modelos probados:
+| Modelo weekly | val_RMSE | val_R2 | test_RMSE | test_R2 | test_Corr | Lectura |
+|---|---:|---:|---:|---:|---:|---|
+| `V7_clima_mas_economicas_rf` | 15.322 | 0.781 | 30.599 | 0.649 | 0.940 | Mejor balance global |
+| `V5_clima_crudo_rf` | 15.397 | 0.779 | 36.011 | 0.511 | 0.877 | Buen benchmark no lineal |
+| `V8_clima_derivado_xgb` | 15.953 | 0.762 | 36.555 | 0.499 | 0.888 | Alternativa boosting competitiva |
+| `V1_baseline_ridge` | 17.537 | 0.713 | 44.226 | 0.266 | 0.910 | Baseline interpretable |
+| `V0_dummy_mean` | 32.828 | -0.006 | 54.102 | -0.098 | 0.000 | Referencia mínima |
 
-- Dummy mean
-- Ridge baseline
-- Ridge con clima
-- Ridge con clima + economía
+El mejor desempeño semanal correspondió a:
 
-Modelo seleccionado:
+`V7_clima_mas_economicas_rf`
 
-```text
-A1_baseline_ridge
-```
+Se seleccionó porque presentó el mejor balance entre error de validación, error de prueba, capacidad explicativa y correlación fuera de muestra. En particular, superó con claridad al baseline lineal y al dummy, mostrando que la combinación de clima derivado y variables económicas aportaba valor operativo a escala semanal.
 
-Lectura metodológica:
+Sin embargo, el análisis posterior mostró una influencia importante del componente territorial, por lo que esta frecuencia debe interpretarse como:
 
-Los resultados mostraron que el mejor desempeño anual correspondió al baseline Ridge. Esto sugiere que, con solo 20 observaciones y clima agregado a escala anual, la señal climática no fue suficiente para superar el componente estructural-territorial. Esta capa anual se interpreta como contraste metodológico y documentación de limitaciones.
+- útil para monitoreo;
+- útil para simulación y sensibilidad;
+- menos fuerte como validación causal del índice climático.
+
+En consecuencia, **weekly quedó como capa operativa del artefacto**, no como evidencia principal de causalidad climática.
+
+### 13.2 Resultados monthly
+
+En frecuencia monthly se compararon modelos con clima, clima + economía y clima + economía + estructura productiva. La competencia principal se dio entre `M5_clima_econ_rf`, `M6_clima_econ_struct_rf` y `M7_clima_econ_xgb`.
+
+| Modelo monthly | val_RMSE | val_R2 | test_RMSE | test_R2 | test_Corr | Lectura |
+|---|---:|---:|---:|---:|---:|---|
+| `M6_clima_econ_struct_rf` | 62.917 | 0.804 | 144.718 | 0.593 | 0.883 | Mejor ajuste global |
+| `M7_clima_econ_xgb` | 62.966 | 0.804 | 150.301 | 0.561 | 0.930 | Muy competitivo |
+| `M5_clima_econ_rf` | 66.339 | 0.782 | 149.602 | 0.565 | 0.908 | Mejor lectura climática |
+| `M4_clima_rf` | 72.813 | 0.737 | 161.853 | 0.491 | 0.840 | Clima sin economía |
+| `M1_baseline_ridge` | 78.893 | 0.692 | 197.843 | 0.240 | 0.907 | Baseline mensual |
+
+El mejor ajuste mensual se obtuvo con:
+
+`M6_clima_econ_struct_rf`
+
+Se seleccionó como mejor capa operativa mensual porque logró el menor error global y el mejor R² en validación y prueba. No obstante, la revisión de importancia por familias mostró dominancia de variables estructurales, especialmente `area_cosechada_departamental_ha`. La contribución agregada por familias fue:
+
+- **estructural = 0.820590**
+- **climática = 0.094971**
+- **económica = 0.080937**
+- **temporal = 0.002683**
+- **territorial = 0.000819**
+
+Por ello, además de `M6`, se conservó también:
+
+`M5_clima_econ_rf`
+
+como referencia más limpia para interpretar la lógica climática y económica del seguro indexado. Aunque M5 quedó ligeramente por debajo en desempeño, preservó una lectura más coherente con el objetivo de conectar señales climáticas y de mercado con la lógica del seguro.
+
+En síntesis:
+
+- **M6** = mejor capa operativa mensual.
+- **M5** = mejor referencia mensual para la lógica climática del seguro.
+
+### 13.3 Resultados annual
+
+En annual se evaluaron dos targets:
+
+- `rendimiento_departamental_t_ha`
+- `produccion_anual_departamental_t`
+
+Los modelos probados fueron Dummy y Ridge. La comparación mostró que el baseline territorial-temporal fue el más estable.
+
+#### Target 1: rendimiento anual
+
+| Modelo annual | val_RMSE | val_R2 | test_RMSE | test_R2 | test_Corr | Lectura |
+|---|---:|---:|---:|---:|---:|---|
+| `A1_baseline_ridge` | 0.120 | 0.626 | 0.427 | -6.343 | 0.788 | Mejor baseline |
+| `A2_clima_ridge` | 0.153 | 0.394 | 0.269 | -1.914 | 0.671 | Clima anual no supera baseline |
+| `A3_clima_econ_ridge` | 0.158 | 0.353 | 0.253 | -1.572 | 0.672 | Clima+economía no supera baseline |
+| `A0_dummy` | 0.200 | -0.042 | 0.299 | -2.600 | 0.000 | Referencia mínima |
+
+#### Target 2: producción anual
+
+| Modelo annual | val_RMSE | val_R2 | test_RMSE | test_R2 | test_Corr | Lectura |
+|---|---:|---:|---:|---:|---:|---|
+| `A1_baseline_ridge` | 643.782 | 0.818 | 2030.095 | 0.252 | 0.999 | Mejor modelo annual |
+| `A3_clima_econ_ridge` | 1388.694 | 0.152 | 2992.643 | -0.626 | 0.819 | Peor que baseline |
+| `A0_dummy` | 1514.170 | -0.008 | 2502.155 | -0.136 | 0.000 | Referencia mínima |
+| `A2_clima_ridge` | 1670.953 | -0.227 | 3495.363 | -1.217 | 0.824 | Clima anual agregado insuficiente |
+
+El modelo retenido fue:
+
+`A1_baseline_ridge`
+
+No porque annual liderara el artefacto, sino porque funcionó como el mejor contraste metodológico disponible dada la escala y el tamaño muestral. A esta frecuencia:
+
+- el baseline territorial-temporal fue superior o más estable;
+- la señal climática anual agregada no superó claramente al baseline;
+- el tamaño muestral fue demasiado pequeño para esperar una capa predictiva robusta.
+
+Esto no invalida el proceso; más bien documenta una limitación importante:
+
+> la agregación anual y la muestra reducida dificultan capturar relaciones climáticas complejas.
+
+Por ello, **annual no quedó como capa principal del artefacto**, sino como nivel de contraste y defendibilidad.
+
+### 13.4 Trazabilidad entre requerimiento, frecuencia y modelo
+
+| Requerimiento / pregunta | Frecuencia más útil | Modelo o referencia | Razón técnica |
+|---|---|---|---|
+| Monitoreo operativo y sensibilidad del artefacto | Weekly | `V7_clima_mas_economicas_rf` | Mayor granularidad temporal y mejor ajuste semanal. |
+| Comparación entre zonas y soporte analítico-operativo | Monthly | `M6_clima_econ_struct_rf` | Mejor desempeño mensual. |
+| Lectura climática más alineada con seguro indexado | Monthly | `M5_clima_econ_rf` | Menor dependencia estructural que M6. |
+| Contraste conservador de defendibilidad | Annual | `A1_baseline_ridge` | Parsimonia y mejor resultado annual frente a alternativas con clima. |
 
 ---
 
-## 13. Modelos seleccionados para la herramienta analítica
+## 14. Síntesis metodológica y lectura final
 
-| Frecuencia | Modelo seleccionado | Rol en el artefacto |
-|-----------|---------------------|---------------------|
-| Semanal | `V7_clima_mas_economicas_rf` | Monitoreo, sensibilidad y simulación operativa |
-| Mensual | `M6_clima_econ_struct_rf` | Mejor ajuste operativo mensual |
-| Mensual alternativo | `M5_clima_econ_rf` | Lectura más limpia del componente climático-económico |
-| Anual | `A1_baseline_ridge` | Contraste metodológico anual |
+Los resultados mostraron que no era metodológicamente correcto insistir en una narrativa de modelo único dominante. En cambio, la evidencia empírica apoyó una arquitectura por capas:
 
----
+- **Weekly:** útil para operación, monitoreo y simulación, pero con alta influencia territorial.
+- **Monthly:** mejor frecuencia intermedia para sostener el artefacto, con una lectura dual entre `M6` como mejor ajuste y `M5` como referencia más alineada con la lógica climática del seguro.
+- **Annual:** útil como contraste metodológico, pero con muestra demasiado pequeña y señal climática anual insuficiente para desplazar al baseline.
 
-## 14. Conclusiones del modelamiento
+Desde una perspectiva estadística, estas limitaciones no invalidan el proyecto; al contrario, ayudan a reubicar cada frecuencia en el rol metodológico que mejor puede cumplir. Weekly maximizó observaciones pero trabajó con una Y proxy; monthly ofreció el mejor compromiso entre estabilidad y operación; y annual, aunque conceptualmente más cercano a producción o rendimiento observados, operó con una muestra reducida para sostener relaciones más complejas.
 
-1. No existe un único modelo dominante para todos los propósitos del proyecto.
-2. La capa semanal es útil para monitoreo operativo, sensibilidad y simulación del artefacto.
-3. La capa mensual es la frecuencia intermedia más útil para conectar señales climáticas, económicas y productivas.
-4. La capa anual sirve como contraste metodológico, pero no como núcleo final del artefacto por el tamaño reducido de la muestra.
-5. Las variables climáticas deben interpretarse como señales explicativas del riesgo, no como garantía causal automática de pérdida productiva.
-6. La heterogeneidad territorial y la estructura productiva siguen siendo determinantes importantes.
-7. El artefacto se justifica mejor como herramienta integrada de monitoreo, comparación territorial, simulación de escenarios y apoyo a primas/triggers, más que como un único modelo predictivo climático puro.
+En consecuencia, el artefacto se justifica mejor como una herramienta integrada de monitoreo, comparación territorial, simulación de escenarios y apoyo a la definición de primas y triggers, más que como un único modelo predictivo climático puro.
 
 ---
 
-## 15. Limitaciones documentadas
+## 15. Limitaciones específicas del modelamiento
 
 - La variable objetivo semanal no es producción observada, sino una proxy operativa.
 - La mensualización y semanalización preservan coherencia temporal, pero no reemplazan observaciones reales de alta frecuencia.
-- El modelamiento semanal puede estar influenciado por heterogeneidad territorial.
-- El modelamiento mensual mejora utilidad operativa, pero el mejor ajuste puede incorporar variables estructurales que dominan parte de la señal climática.
-- El modelamiento anual tiene una muestra reducida, lo que limita la estabilidad de métricas y la capacidad de capturar relaciones climáticas complejas.
-- Los promedios climáticos anuales pueden suavizar eventos extremos o ventanas críticas relevantes para café.
-- Las variables económicas deben interpretarse como contexto de mercado y exposición financiera, no como drivers climáticos directos.
+- El modelamiento weekly mostró fuerte influencia territorial.
+- El modelamiento monthly ofreció mayor utilidad operativa, aunque el mejor ajuste dependió en parte de variables estructurales.
+- El modelamiento annual operó con una muestra muy reducida, lo que limita la estabilidad de las métricas y la capacidad de capturar relaciones climáticas complejas.
+- Los promedios climáticos anuales pueden suavizar eventos extremos o ventanas críticas relevantes para el café.
+- La base panel departamental resultó más valiosa que la proxy nacional agregada, porque preservó heterogeneidad territorial y permitió una comparación más útil entre zonas.
 
 ---
 
