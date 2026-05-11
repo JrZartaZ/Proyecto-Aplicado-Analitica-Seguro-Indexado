@@ -696,7 +696,252 @@ En consecuencia, el artefacto se justifica mejor como una herramienta integrada 
 
 ---
 
-## 16. Diccionario resumido de variables clave
+## 16. Matriz funcional del artefacto
+
+La construcción del artefacto se definió a partir de tres páginas principales, alineadas con las preguntas analíticas, los modelos seleccionados y la utilidad esperada para el usuario final. Esta matriz busca hacer explícita la trazabilidad **requerimiento → frecuencia → modelo/capa → métrica → salida esperada**, respondiendo a una de las observaciones metodológicas más importantes del proceso de evaluación.
+
+### 16.1 Página 1. Diagnóstico descriptivo y contexto territorial
+
+**Objetivo.** Dar contexto al usuario sobre el comportamiento climático, productivo y económico por departamento, y permitir una lectura inicial del riesgo antes de entrar a modelos o decisiones del seguro.
+
+**Preguntas analíticas.**
+- ¿Cómo se comportan el clima, la producción proxy y el contexto económico por departamento y período?
+- ¿Qué departamentos muestran mayor exposición o mayor variabilidad?
+
+**Base principal.**
+- `monthly.csv`
+
+**Base complementaria.**
+- `weekly.csv` para detalle reciente o alertas de corto plazo.
+
+**Capa que la soporta.**
+- Componente descriptivo del artefacto; no depende de un modelo predictivo único.
+
+**Indicadores visibles.**
+- Producción mensual proxy
+- Rendimiento departamental
+- Área cosechada
+- Precipitación
+- Temperatura media / máxima
+- Humedad del suelo
+- Precio interno
+- Precio externo
+- Exportaciones
+- TRM
+
+**Lectura esperada.**
+Esta página no “predice”; organiza el contexto territorial y permite detectar diferencias relevantes para el monitoreo del riesgo.
+
+**Supuestos / limitaciones.**
+- La producción mensual es una proxy construida a partir de la lógica semanal y mensual del proyecto.
+- La lectura es comparativa y descriptiva, no causal.
+- La proxy nacional, si se muestra, se calcula agregando departamentos.
+
+**Visuales sugeridos.**
+- KPI cards
+- Mapa por departamento
+- Series mensuales
+- Comparativos territoriales
+- Tarjetas de alertas climáticas
+
+**Decisión que apoya.**
+Identificar departamentos con mayor exposición, contrastar contexto productivo y climático y orientar dónde profundizar el análisis.
+
+---
+
+### 16.2 Página 2. Modelos, métricas, supuestos y selección metodológica
+
+**Objetivo.** Mostrar qué modelos se probaron, cuál se seleccionó en cada frecuencia, por qué se eligió, qué métrica lo respalda y cuáles son sus limitaciones.
+
+**Preguntas analíticas.**
+- ¿Qué modelo funciona mejor para cada propósito del artefacto?
+- ¿Qué tan confiables son los resultados?
+- ¿Qué capa sirve para monitoreo, cuál para operación y cuál para contraste metodológico?
+
+**Bases principales.**
+- Tablas resumen de resultados weekly, monthly y annual.
+
+**Modelos / capas seleccionadas.**
+- Weekly: `V7_clima_mas_economicas_rf`
+- Monthly operativo: `M6_clima_econ_struct_rf`
+- Monthly referencia climática: `M5_clima_econ_rf`
+- Annual contraste: `A1_baseline_ridge`
+
+**Métricas visibles.**
+- RMSE
+- MAE
+- MAPE
+- R²
+- Corr
+
+**Interpretación esperada.**
+- `V7`: útil para monitoreo operativo, pero no como validación causal fuerte por su influencia territorial.
+- `M6`: mejor ajuste mensual para operación.
+- `M5`: modelo más alineado con la lógica climática del seguro indexado.
+- `A1`: contraste metodológico parsimonioso; no capa principal del artefacto.
+
+**Supuestos / limitaciones.**
+- Weekly usa una Y proxy, no observada.
+- Monthly presenta diferencia controlada entre target agregado desde semana y target mensual de referencia.
+- Annual tiene muestra pequeña (`n = 20`), por lo que se privilegió parsimonia.
+- Random Forest y XGBoost capturan no linealidades, pero son menos interpretables.
+- Ridge es más interpretable, pero menos flexible.
+
+**Ventajas y desventajas por familia de modelos.**
+
+| Familia | Ventaja principal | Riesgo / limitación |
+|---|---|---|
+| Ridge | Interpretabilidad, estabilidad y utilidad con multicolinealidad | No capta toda la no linealidad |
+| Random Forest | Captura interacciones y relaciones no lineales | Menor interpretabilidad; puede reflejar dominancia territorial o estructural |
+| XGBoost | Alta flexibilidad y buen ajuste comparativo | Mayor complejidad y menor trazabilidad |
+| Dummy | Benchmark mínimo | No sirve como capa operativa real |
+
+**Visuales sugeridos.**
+- Tabla comparativa de modelos
+- Cards de modelo seleccionado por frecuencia
+- Barras de importancia por familias
+- Recuadro de supuestos y limitaciones
+- Diagrama de trazabilidad: pregunta → modelo → métrica → uso
+
+**Decisión que apoya.**
+Justificar técnicamente por qué el artefacto usa unas capas y no otras, y dar confianza metodológica al usuario y evaluador.
+
+---
+
+### 16.3 Página 3. Herramienta analítica del seguro indexado
+
+**Objetivo.** Traducir la información descriptiva y los hallazgos del modelamiento en una herramienta útil para monitorear riesgo, comparar zonas y apoyar decisiones técnicas del seguro.
+
+**Preguntas analíticas.**
+- ¿Qué zonas presentan mayor riesgo?
+- ¿Qué señales justifican monitoreo o revisión técnica?
+- ¿Cómo se traduce esto en una lectura útil para el seguro indexado?
+
+**Base principal.**
+- `monthly.csv`
+
+**Bases complementarias.**
+- `weekly.csv` para alertas y monitoreo fino
+- `annual.csv` como soporte metodológico si se requiere una nota técnica
+
+**Capas que la soportan.**
+- Weekly: `V7` para señal operativa
+- Monthly: `M6` como capa principal
+- Monthly: `M5` como contraste más alineado con lógica climática
+- Annual: `A1` solo como respaldo metodológico
+
+**Indicadores visibles.**
+- Señal de riesgo por departamento
+- Estado de alerta climática
+- Comparación mensual entre zonas
+- Resumen técnico de desempeño
+- Variables clave asociadas al riesgo
+- Indicadores de apoyo a trigger / monitoreo / prima técnica
+
+**Lectura esperada.**
+La app no reemplaza una póliza ni calcula actuarialmente el producto final; actúa como artefacto de monitoreo, comparación territorial y apoyo técnico para el diseño del seguro indexado.
+
+**Supuestos / limitaciones.**
+- La capa principal es monthly, no annual.
+- Weekly es útil para seguimiento, pero no para inferencia causal fuerte.
+- La herramienta apoya decisiones técnicas; no automatiza decisiones regulatorias o actuariales completas.
+- La señal de riesgo depende de proxies productivas y de variables agregadas disponibles.
+
+**Visuales sugeridos.**
+- Mapa de riesgo por departamento
+- Ranking de departamentos por señal de riesgo
+- Tarjetas de alerta climática
+- Serie mensual de riesgo / producción / clima
+- Bloque de lectura técnica
+- Recuadro de decisión sugerida: monitoreo, revisión técnica, comparación entre zonas
+
+**Decisión que apoya.**
+Monitoreo técnico del riesgo, comparación entre zonas cafeteras y soporte a revisión de criterios del seguro indexado.
+
+---
+
+### 16.4 Trazabilidad entre requerimiento, frecuencia y modelo
+
+| Requerimiento / pregunta | Página | Frecuencia | Modelo / capa | Métrica clave | Resultado esperado |
+|---|---|---|---|---|---|
+| Entender contexto climático-productivo por zona | 1 | Monthly | Descriptiva | No aplica | Diagnóstico territorial claro |
+| Monitorear dinámica reciente | 1 / 3 | Weekly | `V7` | test_RMSE, test_R2, test_Corr | Señal operativa útil |
+| Seleccionar modelos defendibles | 2 | Weekly / Monthly / Annual | `V7`, `M6`, `M5`, `A1` | RMSE, MAPE, R², Corr | Trazabilidad metodológica |
+| Sostener análisis principal del artefacto | 3 | Monthly | `M6` y `M5` | val/test métricas monthly | Soporte técnico al seguro |
+| Mostrar contraste conservador | 2 | Annual | `A1` | métricas annual | Transparencia metodológica |
+
+---
+
+## 17. Cronograma, métricas de éxito, riesgos y alistamiento del prototipo
+
+La implementación del artefacto se desarrollará como un MVP web basado en **Dash + CSS + Docker + Render**, priorizando trazabilidad, claridad metodológica y utilidad técnica del dashboard antes que complejidad innecesaria de infraestructura.
+
+### 17.1 Cronograma de implementación
+
+| Fase | Actividad principal | Entregable | Responsable | Criterio de cierre |
+|---|---|---|---|---|
+| F1 | Consolidación de datos y repositorio | Cubos `weekly`, `monthly`, `annual` exportados y documentados | Desarrollo del prototipo | CSV exportados, sin duplicados en llaves y con validación básica completada |
+| F2 | Definición funcional del artefacto | Matriz funcional del dashboard | Desarrollo del prototipo | Páginas, preguntas, bases y visuales definidos |
+| F3 | Preparación de datasets app-ready | `weekly_app`, `monthly_app`, `annual_app` | Desarrollo del prototipo | Variables seleccionadas y listas para consumo en Dash |
+| F4 | Construcción de la app en Dash | Estructura de tres páginas y navegación | Desarrollo del prototipo | App corre localmente y carga datos sin error |
+| F5 | Integración visual y contenido analítico | Visuales, KPIs, tablas y módulos metodológicos | Desarrollo del prototipo | Las tres páginas responden a las preguntas analíticas definidas |
+| F6 | Empaquetado y despliegue | Dockerfile + despliegue en Render | Desarrollo del prototipo | App desplegada y accesible |
+| F7 | Validación final y ajustes | Prototipo final + revisión ejecutiva | Desarrollo del prototipo | MVP completo, documentado y listo para presentación |
+
+### 17.2 Métricas de éxito del prototipo
+
+| Dimensión | Métrica de éxito | Umbral deseado |
+|---|---|---|
+| Datos | Exportación correcta de cubos base | 100% de los cubos generados sin error |
+| Datos | Duplicados por llave esperada | 0 duplicados |
+| Datos | Diferencia annual entre target agregado y referencia | 0 |
+| Dashboard | Navegación entre páginas | 100% funcional |
+| Dashboard | Filtros principales (departamento, año, mes) | 100% funcionales |
+| Dashboard | Tiempo de carga local por página | ≤ 5 segundos |
+| Modelamiento | Trazabilidad visible requerimiento → modelo → métrica | Presente en la página 2 |
+| Interpretación | Supuestos y limitaciones visibles | Presente en página 2 y documentado |
+| Artefacto | Señal de riesgo y lectura técnica disponibles | Presente en página 3 |
+| Despliegue | App publicada | URL funcional en Render |
+
+### 17.3 Riesgos y bloqueantes principales
+
+| Riesgo / bloqueante | Efecto posible | Mitigación prevista |
+|---|---|---|
+| Diferencias entre target mensual agregado y target mensual de referencia | Confusión metodológica en la lectura de resultados | Documentar `diff_target_mensual` y explicarlo como limitación controlada |
+| Sobrecarga visual del dashboard | Pérdida de claridad para el usuario | Limitar el artefacto a tres páginas con propósito definido |
+| Exceso de variables en la app | Lentitud y complejidad innecesaria | Crear datasets `*_app.csv` curados |
+| Interpretación errónea de modelos weekly | Sobreventa del componente predictivo | Aclarar que weekly es capa operativa, no validación causal fuerte |
+| Muestra pequeña en annual | Sobreinterpretación de métricas | Usar annual como contraste metodológico |
+| Problemas de despliegue | Retraso en entrega funcional | Probar localmente primero, luego Docker y finalmente Render |
+
+### 17.4 Componentes pendientes por implementar
+
+- [x] Cubos base exportados (`weekly`, `monthly`, `annual`)
+- [x] Validación básica de llaves, nulos y consistencia annual
+- [ ] Datasets app-ready
+- [ ] Estructura Dash de tres páginas
+- [ ] CSS del artefacto
+- [ ] Visuales descriptivos
+- [ ] Módulo de modelos y métricas
+- [ ] Módulo del artefacto del seguro
+- [ ] Dockerfile
+- [ ] Despliegue en Render
+- [ ] Validación final de funcionamiento
+
+### 17.5 Criterio de alistamiento del MVP
+
+El prototipo se considerará listo para evaluación cuando cumpla simultáneamente con las siguientes condiciones:
+
+1. carga correctamente los datos curados del proyecto;
+2. presenta tres páginas funcionales y navegables;
+3. hace explícita la relación entre preguntas analíticas, capas de modelamiento y uso dentro del artefacto;
+4. muestra métricas, supuestos y limitaciones de forma interpretable;
+5. traduce los resultados del modelamiento en una lectura útil para monitoreo y soporte técnico del seguro;
+6. puede ejecutarse localmente y desplegarse mediante contenedor.
+
+---
+
+## 18. Diccionario resumido de variables clave
 
 | Variable | Tipo | Uso recomendado |
 |----------|------|-----------------|
@@ -730,7 +975,7 @@ En consecuencia, el artefacto se justifica mejor como una herramienta integrada 
 
 ---
 
-## 17. Uso esperado del artefacto
+## 19. Uso esperado del artefacto
 
 El artefacto analítico no se limita a predecir producción. Su valor está en integrar capas de información para apoyar decisiones de aseguramiento:
 
@@ -744,7 +989,7 @@ El artefacto analítico no se limita a predecir producción. Su valor está en i
 
 ---
 
-## 19. Referencias metodológicas
+## 20. Referencias metodológicas
 
 - Denton, F. T. (1971). *Adjustment of Monthly or Quarterly Series to Annual Totals: An Approach Based on Quadratic Minimization*. Journal of the American Statistical Association.
 - Dagum, E. B., & Cholette, P. (2006). *Benchmarking, Temporal Distribution, and Reconciliation Methods for Time Series*.
@@ -753,7 +998,7 @@ El artefacto analítico no se limita a predecir producción. Su valor está en i
 
 ---
 
-## 20. Nota final
+## 21. Nota final
 
 Este proyecto debe interpretarse como una aproximación analítica progresiva para un seguro agrícola indexado. La base semanal permite operación y simulación, la base mensual mejora la estabilidad del análisis y la base anual sirve como contraste metodológico frente a la frecuencia original de la producción observada.
 
