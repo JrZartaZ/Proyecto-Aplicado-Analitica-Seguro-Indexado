@@ -1,0 +1,9 @@
+pagina,pregunta_analitica,frecuencia,modelo_o_capa,metrica_clave,resultado_esperado,limitacion_clave
+1,"¿Cómo se comportan el clima, la producción proxy y el contexto económico por departamento y período?",monthly,capa descriptiva,No aplica,Diagnóstico territorial claro,"lectura descriptiva, no causal"
+1,¿Qué departamentos muestran mayor exposición o mayor variabilidad?,monthly,capa descriptiva,No aplica,Comparación territorial,proxy productiva y agregación mensual
+2,¿Qué modelo funciona mejor para cada propósito del artefacto?,weekly,V7_clima_mas_economicas_rf,test_RMSE / test_R2 / test_Corr,Mejor capa operativa semanal,alta influencia territorial
+2,¿Qué modelo sostiene mejor el análisis mensual del artefacto?,monthly,M6_clima_econ_struct_rf,val_RMSE / val_R2 / test_R2,Mejor capa operativa mensual,dominancia estructural
+2,¿Qué modelo conserva mejor la lógica climática del seguro?,monthly,M5_clima_econ_rf,test_Corr / test_R2,Referencia climática mensual,ajuste levemente inferior a M6
+2,¿Qué capa sirve como contraste metodológico conservador?,annual,A1_baseline_ridge,val_RMSE / val_R2 / test_Corr,Transparencia metodológica,muestra pequeña y señal climática annual débil
+3,¿Qué zonas presentan mayor riesgo y qué señales justifican monitoreo?,monthly + weekly,M6/M5 + V7,Métricas monthly + señal weekly,Soporte técnico al seguro,weekly no es inferencia causal fuerte
+3,¿Cómo se traduce el análisis en una herramienta útil para el seguro indexado?,monthly,M6/M5,Val/test métricas monthly,Lectura operativa para monitoreo y revisión técnica,la app no reemplaza un cálculo actuarial completo
