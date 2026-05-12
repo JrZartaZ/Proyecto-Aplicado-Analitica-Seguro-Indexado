@@ -137,7 +137,7 @@ body {
 .chart-grid {
     display: grid;
     gap: 16px;
-    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
 }
 
 .table-wrap h3,
