@@ -1,0 +1,38 @@
+{
+  "indice_climatico_ajustado_x_mean": {
+    "min": 0.0,
+    "max": 2.0,
+    "default": 0.8608419639307121,
+    "step": 0.05
+  },
+  "PRECTOTCORR": {
+    "min": 7.0457,
+    "max": 40.3809,
+    "default": 19.2486,
+    "step": 0.3334
+  },
+  "T2M_mean": {
+    "min": 15.0206,
+    "max": 23.8571,
+    "default": 20.8967,
+    "step": 0.0884
+  },
+  "GWETROOT_mean": {
+    "min": 0.5699,
+    "max": 0.9427,
+    "default": 0.7614,
+    "step": 0.0037
+  },
+  "precio_interno_cop_carga_mean": {
+    "min": 1156107.1429,
+    "max": 2409257.1429,
+    "default": 1852553.5714,
+    "step": 12531.5
+  },
+  "trm_promedio_semana_cop_usd_mean": {
+    "min": 3603.13,
+    "max": 4786.075,
+    "default": 4015.065,
+    "step": 11.8294
+  }
+}
