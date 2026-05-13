@@ -41,7 +41,7 @@ def build_model_results() -> pd.DataFrame:
 
 def build_traceability() -> pd.DataFrame:
     rows = [
-        [1, "¿Cómo se comportan el clima, la producción proxy y el contexto económico por departamento y período?", "monthly", "capa descriptiva", "No aplica", "Diagnóstico territorial claro", "lectura descriptiva, no causal"],
+        [1, "¿Cómo se comportan el clima, la producción proxy y el contexto económico por departamento y período?", "monthly", "capa descriptiva", "No aplica", "Contexto territorial claro", "lectura descriptiva, no causal"],
         [1, "¿Qué departamentos muestran mayor exposición o mayor variabilidad?", "monthly", "capa descriptiva", "No aplica", "Comparación territorial", "proxy productiva y agregación mensual"],
         [2, "¿Qué modelo funciona mejor para cada propósito del artefacto?", "weekly", "V7_clima_mas_economicas_rf", "test_RMSE / test_R2 / test_Corr", "Mejor capa operativa semanal", "alta influencia territorial"],
         [2, "¿Qué modelo sostiene mejor el análisis mensual del artefacto?", "monthly", "M6_clima_econ_struct_rf", "val_RMSE / val_R2 / test_R2", "Mejor capa operativa mensual", "dominancia estructural"],

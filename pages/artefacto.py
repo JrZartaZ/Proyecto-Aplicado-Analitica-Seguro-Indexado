@@ -179,6 +179,7 @@ layout = html.Div(
             "Lectura operativa de riesgo por departamento, usando la capa monthly como soporte principal y weekly como monitoreo fino.",
             className="page-intro",
         ),
+
         html.Div(
             className="note-card",
             children=[
@@ -190,6 +191,80 @@ layout = html.Div(
                 ),
             ],
         ),
+
+        # =========================
+        # 1) Filtros principales
+        # =========================
+        html.Div(
+            className="filter-row",
+            children=[
+                html.Div(
+                    className="filter-card",
+                    children=[
+                        html.Label("Departamento"),
+                        dcc.Dropdown(
+                            id="risk-dept",
+                            options=get_department_options(MONTHLY),
+                            value="TODOS",
+                            clearable=False,
+                        ),
+                    ],
+                ),
+                html.Div(
+                    className="filter-card",
+                    children=[
+                        html.Label("Año"),
+                        dcc.Dropdown(
+                            id="risk-year",
+                            options=get_year_options(MONTHLY),
+                            value="TODOS",
+                            clearable=False,
+                        ),
+                    ],
+                ),
+            ],
+        ),
+
+        # =========================
+        # 2) KPIs de monitoreo
+        # =========================
+        html.Div(
+            className="kpi-row",
+            children=[
+                html.Div(className="kpi-card", id="risk-kpi-1"),
+                html.Div(className="kpi-card", id="risk-kpi-2"),
+                html.Div(className="kpi-card", id="risk-kpi-3"),
+                html.Div(className="kpi-card", id="risk-kpi-4"),
+            ],
+        ),
+
+        # =========================
+        # 3) Gráficos
+        # =========================
+        html.Div(
+            className="chart-grid",
+            children=[
+                dcc.Graph(id="risk-ranking-chart", className="chart-card"),
+                dcc.Graph(id="risk-series-chart", className="chart-card"),
+                dcc.Graph(id="risk-components-chart", className="chart-card"),
+                dcc.Graph(id="risk-weekly-chart", className="chart-card"),
+            ],
+        ),
+
+        # =========================
+        # 4) Lectura técnica
+        # =========================
+        html.Div(
+            className="chart-grid",
+            children=[
+                html.Div(className="note-card", id="risk-reading-card"),
+                html.Div(className="note-card", id="risk-action-card"),
+            ],
+        ),
+
+        # =========================
+        # 5) Simulador al final
+        # =========================
         html.Div(
             className="table-wrap",
             children=[
@@ -366,63 +441,6 @@ layout = html.Div(
                 html.Div(className="note-card", id="sim-note"),
             ],
         ),
-        html.Div(
-            className="filter-row",
-            children=[
-                html.Div(
-                    className="filter-card",
-                    children=[
-                        html.Label("Departamento"),
-                        dcc.Dropdown(
-                            id="risk-dept",
-                            options=get_department_options(MONTHLY),
-                            value="TODOS",
-                            clearable=False,
-                        ),
-                    ],
-                ),
-                html.Div(
-                    className="filter-card",
-                    children=[
-                        html.Label("Año"),
-                        dcc.Dropdown(
-                            id="risk-year",
-                            options=get_year_options(MONTHLY),
-                            value="TODOS",
-                            clearable=False,
-                        ),
-                    ],
-                ),
-            ],
-        ),
-
-        html.Div(
-            className="kpi-row",
-            children=[
-                html.Div(className="kpi-card", id="risk-kpi-1"),
-                html.Div(className="kpi-card", id="risk-kpi-2"),
-                html.Div(className="kpi-card", id="risk-kpi-3"),
-                html.Div(className="kpi-card", id="risk-kpi-4"),
-            ],
-        ),
-
-        html.Div(
-            className="chart-grid",
-            children=[
-                dcc.Graph(id="risk-ranking-chart", className="chart-card"),
-                dcc.Graph(id="risk-series-chart", className="chart-card"),
-                dcc.Graph(id="risk-components-chart", className="chart-card"),
-                dcc.Graph(id="risk-weekly-chart", className="chart-card"),
-            ],
-        ),
-
-        html.Div(
-            className="chart-grid",
-            children=[
-                html.Div(className="note-card", id="risk-reading-card"),
-                html.Div(className="note-card", id="risk-action-card"),
-            ],
-        ),
     ],
 )
 
@@ -585,7 +603,7 @@ def update_artefacto(dept_value, year_value):
                 [
                     html.Li("Usar esta señal para comparación territorial y priorización de seguimiento."),
                     html.Li("No interpretar esta salida como cálculo actuarial definitivo del seguro."),
-                    html.Li("Complementar la revisión con la página de modelos para entender supuestos y limitaciones."),
+                    html.Li("Complementar la revisión con la página de Método para entender supuestos y limitaciones."),
                 ]
             ),
         ]

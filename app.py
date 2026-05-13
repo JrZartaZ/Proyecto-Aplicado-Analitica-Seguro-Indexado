@@ -16,7 +16,7 @@ app.layout = html.Div(
             children=[
                 html.Div(
                     [
-                        html.H1("Dashboard Analítico para el diseño y monitoreo de un seguro agrícola indexado para café en Colombia", className="app-title"),
+                        html.H1("Faro Cafetero ☕", className="app-title"),
                         html.P(
                             "Artefacto analítico para monitoreo de riesgo climático, comparación territorial y soporte técnico a decisiones del seguro",
                             className="app-subtitle",

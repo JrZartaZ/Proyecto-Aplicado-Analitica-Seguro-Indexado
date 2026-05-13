@@ -700,7 +700,7 @@ En consecuencia, el artefacto se justifica mejor como una herramienta integrada 
 
 La construcción del artefacto se definió a partir de tres páginas principales, alineadas con las preguntas analíticas, los modelos seleccionados y la utilidad esperada para el usuario final. Esta matriz busca hacer explícita la trazabilidad **requerimiento → frecuencia → modelo/capa → métrica → salida esperada**, respondiendo a una de las observaciones metodológicas más importantes del proceso de evaluación.
 
-### 16.1 Página 1. Diagnóstico descriptivo y contexto territorial
+### 16.1 Página 1. Contexto descriptivo y contexto territorial
 
 **Objetivo.** Dar contexto al usuario sobre el comportamiento climático, productivo y económico por departamento, y permitir una lectura inicial del riesgo antes de entrar a modelos o decisiones del seguro.
 
@@ -864,7 +864,7 @@ Monitoreo técnico del riesgo, comparación entre zonas cafeteras y soporte a re
 
 | Requerimiento / pregunta | Página | Frecuencia | Modelo / capa | Métrica clave | Resultado esperado |
 |---|---|---|---|---|---|
-| Entender contexto climático-productivo por zona | 1 | Monthly | Descriptiva | No aplica | Diagnóstico territorial claro |
+| Entender contexto climático-productivo por zona | 1 | Monthly | Descriptiva | No aplica | Contexto territorial claro |
 | Monitorear dinámica reciente | 1 / 3 | Weekly | `V7` | test_RMSE, test_R2, test_Corr | Señal operativa útil |
 | Seleccionar modelos defendibles | 2 | Weekly / Monthly / Annual | `V7`, `M6`, `M5`, `A1` | RMSE, MAPE, R², Corr | Trazabilidad metodológica |
 | Sostener análisis principal del artefacto | 3 | Monthly | `M6` y `M5` | val/test métricas monthly | Soporte técnico al seguro |
