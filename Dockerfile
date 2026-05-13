@@ -14,4 +14,4 @@ COPY . .
 
 EXPOSE 8050
 
-CMD ["gunicorn", "app:server", "--bind", "0.0.0.0:8050"]
+CMD gunicorn app:server --bind 0.0.0.0:${PORT:-8050}
