@@ -1,8 +1,4 @@
-from pathlib import Path
-
-base = Path("/mnt/data")
-
-user_guide = """# Guía de usuario — Faro Cafetero ☕
+# Guía de usuario — Faro Cafetero ☕
 
 ## 1. ¿Qué es esta herramienta?
 Faro Cafetero es una herramienta web para apoyar el monitoreo de riesgo climático y la simulación técnica de escenarios relacionados con un seguro indexado para café en Colombia.
