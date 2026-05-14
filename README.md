@@ -989,6 +989,84 @@ El artefacto analítico no se limita a predecir producción. Su valor está en i
 
 ---
 
+## Sección sugerida: Guía rápida de uso del artefacto
+
+### ¿Qué hace la herramienta?
+Faro Cafetero es un artefacto analítico web que integra tres capas complementarias:
+
+1. **Diagnóstico territorial**: permite entender el comportamiento productivo, climático y económico por departamento.
+2. **Trazabilidad metodológica**: muestra los modelos probados, sus métricas, sus limitaciones y la razón de selección.
+3. **Simulación técnica de escenario**: permite ajustar variables climáticas y económicas dentro de rangos controlados para estimar impacto proxy sobre producción, cobertura indicativa y prima de referencia.
+
+### Ruta recomendada de uso
+Se recomienda que el usuario siga la herramienta en este orden:
+
+1. **Diagnóstico**  
+   Para entender el estado del sistema cafetero y el comportamiento territorial.
+2. **Modelos**  
+   Para comprender la lógica metodológica, la selección de modelos y sus limitaciones.
+3. **Artefacto**  
+   Para monitorear señal de riesgo y ejecutar simulaciones técnicas de escenario.
+
+### Alcance del simulador
+El artefacto no calcula una prima actuarial definitiva, pero sí permite simular escenarios climáticos y económicos, estimar su impacto proxy sobre la producción mensual y traducir dicho impacto en una cobertura indicativa y una prima de referencia para fines de monitoreo y soporte técnico.
+
+### Arquitectura analítica del artefacto
+El simulador se apoya en una lógica híbrida:
+
+- **M6** como capa operativa mensual base.
+- **M5** como capa de sensibilidad climática.
+
+Con esta arquitectura:
+- la producción base operativa proviene de M6,
+- el deterioro adverso del escenario se captura con M5,
+- y el resultado se transforma en métricas proxy de pérdida, valor expuesto, cobertura y prima.
+
+### Resultados que entrega la herramienta
+En el capítulo de artefacto, el usuario puede consultar:
+- producción base operativa,
+- producción simulada,
+- pérdida proxy en toneladas,
+- pérdida proxy porcentual,
+- valor expuesto proxy,
+- cobertura indicativa,
+- prima indicativa de referencia.
+
+### Limitaciones que deben quedar visibles
+- La producción utilizada es una proxy operacional.
+- La herramienta no reemplaza un cálculo actuarial definitivo.
+- La simulación debe entenderse como apoyo técnico y de sensibilidad.
+- Los resultados deben interpretarse de forma comparativa y no como una predicción causal estricta.
+
+### Reproducibilidad
+El proyecto fue desarrollado con una arquitectura reproducible que incluye:
+- cubos de datos procesados,
+- scripts de construcción de datasets app-ready,
+- metadata de modelos,
+- modelos serializados,
+- dashboard desarrollado en Dash,
+- contenedorización mediante Docker,
+- despliegue web en Render.
+
+### Infraestructura implementada
+- **Lenguaje**: Python
+- **Framework de app**: Dash
+- **Visualización**: Plotly
+- **Modelos**: Ridge, Random Forest y XGBoost según frecuencia
+- **Persistencia de modelos**: joblib
+- **Empaquetado**: Docker
+- **Despliegue**: Render
+
+### Valor del artefacto
+El valor principal del artefacto está en que no se limita a mostrar datos o métricas, sino que conecta:
+- contexto territorial,
+- selección metodológica,
+- y simulación técnica de escenarios
+
+en una misma experiencia de uso.
+
+---
+
 ## 20. Referencias metodológicas
 
 - Denton, F. T. (1971). *Adjustment of Monthly or Quarterly Series to Annual Totals: An Approach Based on Quadratic Minimization*. Journal of the American Statistical Association.
