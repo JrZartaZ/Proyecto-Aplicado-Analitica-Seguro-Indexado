@@ -139,7 +139,16 @@ def action_label(score: float) -> str:
         return "Revisión técnica prioritaria"
     return "Monitoreo intensivo y revisión inmediata"
 
+def activation_label_loss(loss_pct: float) -> str:
+    if pd.isna(loss_pct):
+        return "Sin lectura"
+    if loss_pct < 0.03:
+        return "No activado"
+    if loss_pct < 0.07:
+        return "Activación preventiva"
+    return "Activación probable"
 
+    
 def kpi_block(title, value, subtitle=None):
     children = [
         html.H3(title),
@@ -170,6 +179,78 @@ def sim_card(title, value, subtitle=None):
     if subtitle:
         children.append(html.Small(subtitle, style={"color": "#5f6c67"}))
     return children
+
+def build_simulation_flow_figure():
+    fig = go.Figure(
+        go.Sankey(
+            arrangement="fixed",
+            node=dict(
+                pad=18,
+                thickness=18,
+                line=dict(color="#d6ddd9", width=1),
+                label=[
+                    "Fila base\nmensual real",
+                    "Escenario ajustado\npor el usuario",
+                    "M6:\nproducción base\noperativa",
+                    "M5:\nsensibilidad\nclimática",
+                    "Producción\nsimulada",
+                    "Pérdida\nproxy",
+                    "Valor expuesto\nproxy",
+                    "Cobertura\nindicativa",
+                    "Prima de\nreferencia",
+                ],
+                color=[
+                    COLOR_BLUE,
+                    COLOR_GOLD,
+                    COLOR_GREEN_2,
+                    "#7a8f5b",
+                    COLOR_GREEN,
+                    COLOR_RED,
+                    COLOR_BROWN,
+                    "#5a7d73",
+                    "#8e6bbf",
+                ],
+                x=[0.02, 0.02, 0.28, 0.28, 0.50, 0.68, 0.83, 0.96, 0.96],
+                y=[0.28, 0.74, 0.20, 0.72, 0.46, 0.46, 0.46, 0.28, 0.74],
+            ),
+            link=dict(
+                source=[0, 0, 1, 2, 3, 4, 5, 6, 7],
+                target=[2, 3, 3, 4, 4, 5, 6, 7, 8],
+                value=[1, 1, 1, 1, 1, 1, 1, 1, 1],
+                color=[
+                    "rgba(43,103,119,0.18)",
+                    "rgba(196,154,0,0.18)",
+                    "rgba(196,154,0,0.25)",
+                    "rgba(29,82,67,0.20)",
+                    "rgba(122,143,91,0.20)",
+                    "rgba(185,74,72,0.20)",
+                    "rgba(138,106,74,0.20)",
+                    "rgba(90,125,115,0.22)",
+                    "rgba(142,107,191,0.22)",
+                ],
+            ),
+        )
+    )
+
+    fig.update_layout(
+        title=dict(
+            text="Cómo funciona la simulación",
+            x=0.03,
+            xanchor="left",
+            font=dict(size=20, color=COLOR_GREEN)
+        ),
+        paper_bgcolor=COLOR_BG,
+        plot_bgcolor=COLOR_BG,
+        font=dict(
+            family='"Abadi MT Condensed Light", "Segoe UI", Arial, sans-serif',
+            size=13,
+            color=COLOR_TEXT
+        ),
+        margin=dict(l=20, r=20, t=60, b=20),
+        height=360,
+    )
+    return fig
+
 
 layout = html.Div(
     className="page-content",
@@ -270,8 +351,86 @@ layout = html.Div(
             children=[
                 html.H3("Simulador técnico de escenario"),
                 html.P(
-                    "Usa una fila base mensual real y ajusta variables climáticas y económicas dentro de rangos controlados. "
-                    "La producción base se apoya en M6 y la sensibilidad climática en M5."
+                    "Luego de revisar el contexto territorial y la señal de riesgo, el usuario puede simular un escenario "
+                    "técnico controlado. La producción base se apoya en M6 y la sensibilidad climática en M5."
+                ),
+
+                html.Div(
+                    className="chart-grid",
+                    children=[
+                        dcc.Graph(
+                            figure=build_simulation_flow_figure(),
+                            config={"displayModeBar": False},
+                            className="chart-card",
+                        ),
+                        html.Div(
+                            className="note-card",
+                            children=[
+                                html.H4("Cómo leer este simulador"),
+                                html.P(
+                                    "La simulación parte de una observación mensual real y permite ajustar variables "
+                                    "climáticas y económicas dentro de rangos controlados. El objetivo no es cotizar "
+                                    "una póliza real, sino traducir un escenario técnico en una lectura económica interpretable."
+                                ),
+                                html.Ol(
+                                    [
+                                        html.Li("M6 estima la producción base operativa del mes seleccionado."),
+                                        html.Li("M5 evalúa cómo cambia la producción si el escenario climático o económico se deteriora."),
+                                        html.Li("Solo se traslada el deterioro adverso de M5; no se incorporan mejoras optimistas."),
+                                        html.Li("La diferencia entre producción base y producción simulada se interpreta como pérdida proxy."),
+                                        html.Li("Esa pérdida se transforma en valor expuesto, cobertura indicativa y prima de referencia."),
+                                    ]
+                                ),
+                                html.H4("Lógica financiera visible"),
+                                html.Ul(
+                                    [
+                                        html.Li("Valor expuesto proxy = pérdida productiva × 8 cargas por tonelada × precio interno."),
+                                        html.Li("Cobertura indicativa = valor expuesto ajustado × porcentaje de cobertura."),
+                                        html.Li("Prima indicativa = cobertura indicativa × tasa prima."),
+                                    ]
+                                ),
+                                html.P(
+                                    "Importante: esta salida es una referencia técnica para monitoreo y soporte, no una tarificación actuarial definitiva."
+                                ),
+                            ],
+                        ),
+                    ],
+                ),
+
+                html.Div(
+                    className="chart-grid",
+                    children=[
+                        html.Div(
+                            className="note-card",
+                            children=[
+                                html.H4("¿Qué pasa si muevo los controles?"),
+                                html.Ul(
+                                    [
+                                        html.Li("Un escenario climático más adverso puede reducir la producción simulada."),
+                                        html.Li("Más hectáreas aseguradas aumentan el valor expuesto ajustado."),
+                                        html.Li("Mayor porcentaje de cobertura incrementa la cobertura indicativa."),
+                                        html.Li("Mayor tasa prima incrementa la prima de referencia."),
+                                    ]
+                                ),
+                            ],
+                        ),
+                        html.Div(
+                            className="note-card",
+                            children=[
+                                html.H4("Regla de activación indicativa"),
+                                html.Ul(
+                                    [
+                                        html.Li("Pérdida proxy menor a 3%: no activado."),
+                                        html.Li("Pérdida proxy entre 3% y 7%: activación preventiva."),
+                                        html.Li("Pérdida proxy mayor a 7%: activación probable."),
+                                    ]
+                                ),
+                                html.P(
+                                    "Esta regla no representa una póliza contractual real; sirve para hacer más clara la interpretación financiera del escenario."
+                                ),
+                            ],
+                        ),
+                    ],
                 ),
 
                 html.Div(
@@ -682,10 +841,15 @@ def update_simulator(
             cobertura_pct=cobertura_value,
             tasa_prima_pct=prima_value,
         )
-
+        perdida_pct = resultado["perdida_proxy_pct"]
+        activacion = activation_label_loss(perdida_pct)
         k1 = sim_card("Producción base operativa", fmt_num(resultado["hybrid_base_prediction"], 2), "Base M6")
         k2 = sim_card("Producción simulada", fmt_num(resultado["hybrid_scenario_prediction"], 2), "Base M6 + deterioro adverso M5")
-        k3 = sim_card("Pérdida proxy", fmt_num(resultado["perdida_proxy_t"], 2) + " t", f"{fmt_num(resultado['perdida_proxy_pct'] * 100, 2)}%")
+        k3 = sim_card(
+            "Pérdida proxy",
+            fmt_num(resultado["perdida_proxy_t"], 2) + " t",
+            f"{fmt_num(perdida_pct * 100, 2)}% | {activacion}"
+        )
         k4 = sim_card("Valor expuesto proxy", cop_fmt(resultado["valor_expuesto_proxy_cop"]), "Diferencia base vs escenario")
         k5 = sim_card("Cobertura indicativa", cop_fmt(resultado["cobertura_indicativa_cop"]), f"Cobertura {int(cobertura_value*100)}%")
         k6 = sim_card("Prima indicativa", cop_fmt(resultado["prima_indicativa_cop"]), f"Tasa {fmt_num(prima_value*100, 1)}%")
@@ -696,13 +860,26 @@ def update_simulator(
                 html.P(
                     f"Para {dept_value.title()}, {year_value}-{str(month_value).zfill(2)}, el escenario simulado genera una "
                     f"producción ajustada de {fmt_num(resultado['hybrid_scenario_prediction'], 2)} frente a una base operativa "
-                    f"de {fmt_num(resultado['hybrid_base_prediction'], 2)}. Esto implica una pérdida proxy de "
-                    f"{fmt_num(resultado['perdida_proxy_t'], 2)} toneladas y un valor expuesto aproximado de "
-                    f"{cop_fmt(resultado['valor_expuesto_proxy_cop'])}."
+                    f"de {fmt_num(resultado['hybrid_base_prediction'], 2)}."
                 ),
                 html.P(
-                    "La base productiva se apoya en M6 y la sensibilidad climática en M5. "
-                    "Esta salida es una referencia técnica de simulación, no una cotización actuarial definitiva."
+                    f"La diferencia representa una pérdida proxy de {fmt_num(resultado['perdida_proxy_t'], 2)} toneladas "
+                    f"({fmt_num(perdida_pct * 100, 2)}%), clasificada como: {activacion.lower()}."
+                ),
+                html.P(
+                    f"Esa pérdida equivale a un valor expuesto aproximado de {cop_fmt(resultado['valor_expuesto_proxy_cop'])}. "
+                    f"Con una cobertura de {fmt_num(cobertura_value * 100, 0)}% y una tasa prima de "
+                    f"{fmt_num(prima_value * 100, 1)}%, el artefacto estima una cobertura indicativa de "
+                    f"{cop_fmt(resultado['cobertura_indicativa_cop'])} y una prima de referencia de "
+                    f"{cop_fmt(resultado['prima_indicativa_cop'])}."
+                ),
+                html.P(
+                    "Interpretación simple: M6 aporta la base productiva del mes y M5 aporta la sensibilidad climática. "
+                    "Después, la pérdida productiva se traduce a una lectura económica para apoyar monitoreo y soporte técnico."
+                ),
+                html.P(
+                    "Esta salida no reemplaza una tarificación actuarial definitiva; funciona como simulación analítica y "
+                    "como proxy para explorar impacto y exposición."
                 ),
             ]
         )
